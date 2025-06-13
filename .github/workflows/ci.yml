@@ -1,0 +1,38 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: experimental-features = nix-command flakes
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Install devenv
+        run: nix shell nixpkgs#devenv
+
+      - name: Check flake
+        run: nix flake check
+
+      - name: Format check (Nix)
+        run: |
+          devenv shell alejandra --check .
+
+      - name: Lint (Nix)
+        run: |
+          devenv shell statix check .
+          devenv shell deadnix --fail .
+
+      - name: Format check (C++)
+        run: |
+          devenv shell clang-format --dry-run -Werror **/*.cpp **/*.hpp
+
+      - name: Test (C++)
+        run: |
+          devenv shell rt
