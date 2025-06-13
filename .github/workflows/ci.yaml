@@ -19,7 +19,7 @@ jobs:
 
       - name: Format check (Nix)
         run: |
-          devenv shell alejandra --check .
+          devenv shell alejandra -- --check devenv.nix
 
       - name: Lint (Nix)
         run: |

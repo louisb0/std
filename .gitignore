@@ -40,3 +40,4 @@ devenv.local.nix
 
 # CMake
 build/
+.cache/
