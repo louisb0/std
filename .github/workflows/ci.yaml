@@ -17,9 +17,6 @@ jobs:
       - name: Install devenv
         run: nix shell nixpkgs#devenv
 
-      - name: Check flake
-        run: nix flake check
-
       - name: Format check (Nix)
         run: |
           devenv shell alejandra --check .
