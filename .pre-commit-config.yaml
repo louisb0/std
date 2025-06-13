@@ -1,0 +1,35 @@
+repos:
+  - repo: local
+    hooks:
+      - id: alejandra
+        name: alejandra
+        entry: alejandra
+        language: system
+        files: \.nix$
+
+      - id: statix
+        name: statix
+        entry: statix check
+        language: system
+        files: \.nix$
+        pass_filenames: false
+
+      - id: deadnix
+        name: deadnix
+        entry: deadnix --fail
+        language: system
+        files: \.nix$
+
+      - id: clang-format
+        name: clang-format
+        entry: clang-format
+        language: system
+        files: \.(cpp|hpp)$
+        args: [--dry-run, -Werror]
+
+      - id: gtest
+        name: gtest
+        entry: rt
+        language: system
+        files: \.(cpp|hpp)$
+        pass_filenames: false
