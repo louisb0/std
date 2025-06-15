@@ -34,12 +34,26 @@ concept weakly_incrementable =
         { ++i } -> std::same_as<I &>;
         i++;
     };
+ /* semantics {
+        [for a state i, either both ++i and i++ are valid or both are invalid]
+        domain(++i) == domain(i++)
+
+        [both forms must move to the same next iterator state]
+        if incrementable(i): ++i and i++ both advance i
+
+        [++i must return a reference to the same object i]
+        if incrementable(i): addressof(++i) == addressof(i)
+    } */
 
 template <typename I>
 concept input_or_output_iterator =
     weakly_incrementable<I> &&
     requires(I i) { *i; } &&
     can_reference<decltype(*std::declval<I>())>;
+ /* semantics {
+        [equality preserving]
+        *i == *i
+    } */
 
 template <typename I>
 concept input_iterator =
@@ -55,6 +69,28 @@ concept output_iterator =
     requires (I i, T&& t) {
         *i++ = std::forward<T>(t);
     };
+ /* semantics {
+        [post-increment cannot pre-emptively changing the write position]
+        *i++ = t  <=>  *i = t; ++i;
+    } */
+
+template <typename I>
+concept forward_iterator =
+    input_iterator<I> &&
+    requires(I i) { typename iter_tag_t<I>; } &&
+    std::derived_from<iter_tag_t<I>, forward_iterator_tag>;
+ /* semantics {
+        [comparison between i and j is defined only over the same sequence or both value-initialized]
+        defined(i == j) <=> (sequence(i) == sequence(j)) || (i{} && j{})
+
+        [pointers / references from the iterator remain valid while sequence exists]
+        lifetime(pointer_from(i)) == lifetime(reference_from(i)) == lifetime(sequence())
+
+        [multipass guarantee - copies don't affect originals]
+            if (i == j): ++i == ++j
+            increment_copy(i) doesn't change *i
+    } */
+
 // clang-format on
 
 } // namespace mystd
