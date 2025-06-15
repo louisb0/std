@@ -1,7 +1,6 @@
 #include "iterator.hpp"
 
 #include <gtest/gtest.h>
-#include <iterator>
 
 TEST(Iterator, WeaklyIncrementableConcept) {
     struct Valid {
@@ -51,6 +50,8 @@ TEST(Iterator, InputOrOutputIteratorConcept) {
 }
 
 TEST(Iterator, InputIteratorConcept) {
+    struct bad_tag {};
+
     struct Valid {
         using value_type = int;
         using iterator_category = mystd::forward_iterator_tag;
@@ -79,7 +80,7 @@ TEST(Iterator, InputIteratorConcept) {
 
     struct IncorrectIteratorCategory {
         using value_type = int;
-        using iterator_category = mystd::output_iterator_tag;
+        using iterator_category = bad_tag;
 
         IncorrectIteratorCategory &operator++() { return *this; }
         value_type operator++(int) { return 0; }
@@ -92,7 +93,7 @@ TEST(Iterator, InputIteratorConcept) {
 
     struct InconsistentValueType {
         using value_type = int;
-        using iterator_category = mystd::output_iterator_tag;
+        using iterator_category = bad_tag;
 
         InconsistentValueType &operator++() { return *this; }
         value_type operator++(int) { return 0; }

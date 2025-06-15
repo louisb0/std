@@ -1,22 +1,26 @@
 #include <concepts>
 #include <iterator>
 #include <type_traits>
+#include <utility>
 
 namespace mystd {
 
-struct output_iterator_tag {};
+// TODO & NOTE:
+//  - implement std::forward()
+//  - implement std::indirectly_readable() and std::indirectly_writable()
+
 struct input_iterator_tag {};
 struct forward_iterator_tag : input_iterator_tag {};
 struct bidirectional_iterator_tag : forward_iterator_tag {};
 struct random_access_iterator_tag : bidirectional_iterator_tag {};
 
-template <typename I> struct iter_concept {
+template <typename I> struct iter_tag {
     using type = typename I::iterator_category;
 };
-template <typename T> struct iter_concept<T *> {
+template <typename T> struct iter_tag<T *> {
     using type = random_access_iterator_tag;
 };
-template <typename I> using iter_concept_t = typename iter_concept<I>::type;
+template <typename I> using iter_tag_t = typename iter_tag<I>::type;
 
 // clang-format off
 template <typename I>
