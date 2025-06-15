@@ -26,6 +26,33 @@ TEST(Iterator, WeaklyIncrementableConcept) {
     EXPECT_FALSE(mystd::weakly_incrementable<PreIncrementReturnsValue>);
 }
 
+TEST(Iterator, CanReference) {
+    // object types - (possibly cv-qualified) non function, non reference, non void
+    EXPECT_TRUE(mystd::can_reference<int>);
+    EXPECT_TRUE(mystd::can_reference<const int>);
+    EXPECT_TRUE(mystd::can_reference<volatile int>);
+    EXPECT_TRUE(mystd::can_reference<int *>);
+    EXPECT_TRUE(mystd::can_reference<int[5]>);
+    EXPECT_TRUE(mystd::can_reference<int (*)()>);
+    EXPECT_FALSE(mystd::can_reference<void>);
+    EXPECT_FALSE(mystd::can_reference<const void>);
+    EXPECT_FALSE(mystd::can_reference<volatile void>);
+
+    // function types without cv and ref
+    EXPECT_TRUE(mystd::can_reference<int()>);
+    EXPECT_FALSE(mystd::can_reference<int() const>);
+    EXPECT_FALSE(mystd::can_reference<int() volatile>);
+    EXPECT_FALSE(mystd::can_reference<int() const volatile>);
+    EXPECT_FALSE(mystd::can_reference<int() &>);
+    EXPECT_FALSE(mystd::can_reference<int() &&>);
+
+    // reference types
+    EXPECT_TRUE(mystd::can_reference<int &>);
+    EXPECT_TRUE(mystd::can_reference<int (&)()>);
+    EXPECT_TRUE(mystd::can_reference<const int &>);
+    EXPECT_TRUE(mystd::can_reference<int &&>);
+}
+
 TEST(Iterator, InputOrOutputIteratorConcept) {
     struct Valid {
         Valid &operator++() { return *this; }
@@ -40,13 +67,13 @@ TEST(Iterator, InputOrOutputIteratorConcept) {
     };
     EXPECT_FALSE(mystd::input_or_output_iterator<MissingDereferenceOperator>);
 
-    struct DereferenceReturnsValue {
-        DereferenceReturnsValue &operator++() { return *this; }
+    struct DereferenceNotReferencable {
+        DereferenceNotReferencable &operator++() { return *this; }
         int operator++(int) { return 0; }
 
-        DereferenceReturnsValue operator*() { return *this; }
+        void operator*() { return; }
     };
-    EXPECT_FALSE(mystd::input_or_output_iterator<DereferenceReturnsValue>);
+    EXPECT_FALSE(mystd::input_or_output_iterator<DereferenceNotReferencable>);
 }
 
 TEST(Iterator, InputIteratorConcept) {

@@ -9,6 +9,10 @@ namespace mystd {
 //  - implement std::forward()
 //  - implement std::indirectly_readable() and std::indirectly_writable()
 
+template <typename T>
+concept can_reference =
+    std::is_reference_v<T> || !std::is_same_v<T, std::add_lvalue_reference_t<T>>;
+
 struct input_iterator_tag {};
 struct forward_iterator_tag : input_iterator_tag {};
 struct bidirectional_iterator_tag : forward_iterator_tag {};
@@ -35,7 +39,7 @@ template <typename I>
 concept input_or_output_iterator =
     weakly_incrementable<I> &&
     requires(I i) { *i; } &&
-    std::is_reference_v<decltype(*std::declval<I>())>;
+    can_reference<decltype(*std::declval<I>())>;
 
 template <typename I>
 concept input_iterator =
