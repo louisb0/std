@@ -41,8 +41,16 @@ template <typename I>
 concept input_iterator =
     input_or_output_iterator<I> &&
     std::indirectly_readable<I> &&
-    requires(I i) { typename iter_concept_t<I>; } &&
-    std::derived_from<iter_concept_t<I>, input_iterator_tag>;
+    requires(I i) { typename iter_tag_t<I>; } &&
+    std::derived_from<iter_tag_t<I>, input_iterator_tag>;
+
+template <typename I, typename T>
+concept output_iterator =
+    input_or_output_iterator<I> &&
+    std::indirectly_writable<I, T> &&
+    requires (I i, T&& t) {
+        *i++ = std::forward<T>(t);
+    };
 // clang-format on
 
 } // namespace mystd

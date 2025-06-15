@@ -89,6 +89,7 @@ TEST(Iterator, InputIteratorConcept) {
             return x;
         }
     };
+    EXPECT_TRUE(std::indirectly_readable<IncorrectIteratorCategory>);
     EXPECT_FALSE(mystd::input_iterator<IncorrectIteratorCategory>);
 
     struct InconsistentValueType {
@@ -103,5 +104,33 @@ TEST(Iterator, InputIteratorConcept) {
             return x;
         }
     };
+    EXPECT_TRUE(std::indirectly_readable<IncorrectIteratorCategory>);
     EXPECT_FALSE(mystd::input_iterator<InconsistentValueType>);
+}
+
+TEST(Iterator, OutputIteratorConcept) {
+    static int shared;
+
+    struct Valid {
+        Valid &operator++() { return *this; }
+        int *operator++(int) { return &shared; }
+        int &operator*() { return shared; }
+    };
+    EXPECT_TRUE((mystd::output_iterator<Valid, int>));
+
+    struct NotIndirectlyWriteable {
+        NotIndirectlyWriteable &operator++() { return *this; }
+        int *operator++(int) { return &shared; }
+        const int &operator*() { return shared; }
+    };
+    EXPECT_TRUE((mystd::input_or_output_iterator<NotIndirectlyWriteable>));
+    EXPECT_FALSE((std::indirectly_writable<NotIndirectlyWriteable, int>));
+
+    struct NotIncrementDereferenceableAssignable {
+        NotIncrementDereferenceableAssignable &operator++() { return *this; }
+        int operator++(int) { return shared; }
+        int &operator*() { return shared; }
+    };
+    EXPECT_TRUE((std::indirectly_writable<NotIncrementDereferenceableAssignable, int>));
+    EXPECT_FALSE((mystd::output_iterator<NotIncrementDereferenceableAssignable, int>));
 }
