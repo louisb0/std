@@ -2,11 +2,13 @@
   languages.cplusplus.enable = true;
 
   packages = with pkgs; [
-    pkgs.clang-tools
-    pkgs.alejandra
-    pkgs.statix
-    pkgs.deadnix
-    pkgs.pre-commit
+    valgrind
+    clang-tools
+
+    alejandra
+    statix
+    deadnix
+    pre-commit
   ];
 
   scripts = {
@@ -23,13 +25,14 @@
       fi
     '';
 
-    rb.exec = ''
-      cmake --build build --target benchmarks
-      if [ -n "$1" ]; then
-        build/benchmarks --benchmark_filter="$1"
-      else
-        build/benchmarks
-      fi
+    vt.exec = ''
+      cmake --build build --target tests
+      FILTER=""
+      [ -n "$1" ] && FILTER="--gtest_filter=*$1*"
+
+      valgrind --leak-check=full --show-leak-kinds=all \
+        --trace-children=yes --track-origins=yes \
+        build/tests $FILTER
     '';
   };
 }
