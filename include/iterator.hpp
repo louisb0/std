@@ -18,15 +18,27 @@ struct forward_iterator_tag : input_iterator_tag {};
 struct bidirectional_iterator_tag : forward_iterator_tag {};
 struct random_access_iterator_tag : bidirectional_iterator_tag {};
 
-template <typename I> struct iter_tag {
-    using type = typename I::iterator_category;
+template <typename I, typename T = void> struct iter_tag {};
+template <typename I> struct iter_tag<I, std::void_t<typename I::iterator_category>> {
+    using type = I::iterator_category;
 };
 template <typename T> struct iter_tag<T *> {
-    using type = random_access_iterator_tag;
+    using type = mystd::random_access_iterator_tag;
 };
-template <typename I> using iter_tag_t = typename iter_tag<I>::type;
+
+template <typename I, typename Tag>
+concept matches_iterator_tag =
+    requires { typename iter_tag<I>::type; } && std::derived_from<typename iter_tag<I>::type, Tag>;
 
 // clang-format off
+
+/**
+ * weakly_incrementable - object that can be incremented
+ * [semantics]:
+ * - for any iterator i, either both ++i and i++ are valid or both are invalid
+ * - when valid, both ++i and i++ advance to the same next iterator state
+ * - when valid, ++i returns a reference to the same object i
+ */
 template <typename I>
 concept weakly_incrementable =
     std::movable<I> &&
@@ -34,34 +46,38 @@ concept weakly_incrementable =
         { ++i } -> std::same_as<I &>;
         i++;
     };
- /* semantics {
-        [for a state i, either both ++i and i++ are valid or both are invalid]
-        domain(++i) == domain(i++)
 
-        [both forms must move to the same next iterator state]
-        if incrementable(i): ++i and i++ both advance i
+/**
+ * incrementable - weakly_incrementable, but post-increment returns a copy
+ * [semantics]:
+ * - for incrementable a and b:
+ *      - post-increment returns the original object, (a == b) implies (a++ == b)
+ *      - post-increment preserves equality, (a == b) implies ((void)a++, a) == ++b)
+ */
+template <typename I>
+concept incrementable =
+    weakly_incrementable<I> &&
+    std::regular<I> &&
+    requires(I i) {
+        { i++ } -> std::same_as<I>;
+    };
 
-        [++i must return a reference to the same object i]
-        if incrementable(i): addressof(++i) == addressof(i)
-    } */
-
+/**
+ * input_or_output_iterator - weakly_incrementable with dereferencing: an iterator
+ * [semantics]
+ * - equality preserving, *i == *i
+ */
 template <typename I>
 concept input_or_output_iterator =
     weakly_incrementable<I> &&
     requires(I i) { *i; } &&
     can_reference<decltype(*std::declval<I>())>;
- /* semantics {
-        [equality preserving]
-        *i == *i
-    } */
 
-template <typename I>
-concept input_iterator =
-    input_or_output_iterator<I> &&
-    std::indirectly_readable<I> &&
-    requires(I i) { typename iter_tag_t<I>; } &&
-    std::derived_from<iter_tag_t<I>, input_iterator_tag>;
-
+/**
+ * output_iterator - input_or_output_iterator, but dereference must write-through
+ * [semantics]
+ * - sensible post-increment, *i++ = t is equivalent to *i = t; ++i;
+ */
 template <typename I, typename T>
 concept output_iterator =
     input_or_output_iterator<I> &&
@@ -69,27 +85,31 @@ concept output_iterator =
     requires (I i, T&& t) {
         *i++ = std::forward<T>(t);
     };
- /* semantics {
-        [post-increment cannot pre-emptively changing the write position]
-        *i++ = t  <=>  *i = t; ++i;
-    } */
 
+/**
+ * input_iterator - input_or_output_iterator, but deference must read-through
+ * [semantics]
+ *  - none
+ */
+template <typename I>
+concept input_iterator =
+    input_or_output_iterator<I> &&
+    std::indirectly_readable<I> &&
+    matches_iterator_tag<I, input_iterator_tag>;
+
+/**
+ * forward_iterator - input_iterator (and optionally output_iterator), with semantics.
+ * [semantics]
+ *  - for i and j, comparison is defined only over the same sequence, or if value-initialized
+ *  - multipass guarantee (i.e. copies are independent, as enabled by incrementable<T>'s copy semantics)
+ *      - if i == j, then ++i == ++j
+ *      - *i == ((void)[](auto x){ ++x; }(i), *i)
+ */
 template <typename I>
 concept forward_iterator =
     input_iterator<I> &&
-    requires(I i) { typename iter_tag_t<I>; } &&
-    std::derived_from<iter_tag_t<I>, forward_iterator_tag>;
- /* semantics {
-        [comparison between i and j is defined only over the same sequence or both value-initialized]
-        defined(i == j) <=> (sequence(i) == sequence(j)) || (i{} && j{})
-
-        [pointers / references from the iterator remain valid while sequence exists]
-        lifetime(pointer_from(i)) == lifetime(reference_from(i)) == lifetime(sequence())
-
-        [multipass guarantee - copies don't affect originals]
-            if (i == j): ++i == ++j
-            increment_copy(i) doesn't change *i
-    } */
+    incrementable<I> &&
+    matches_iterator_tag<I, forward_iterator_tag>;
 
 // clang-format on
 
