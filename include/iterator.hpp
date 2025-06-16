@@ -18,17 +18,25 @@ struct forward_iterator_tag : input_iterator_tag {};
 struct bidirectional_iterator_tag : forward_iterator_tag {};
 struct random_access_iterator_tag : bidirectional_iterator_tag {};
 
-template <typename I, typename T = void> struct iter_tag {};
-template <typename I> struct iter_tag<I, std::void_t<typename I::iterator_category>> {
+template <typename I, typename T = void> struct iterator_tag {};
+template <typename I> struct iterator_tag<I, std::void_t<typename I::iterator_category>> {
     using type = I::iterator_category;
 };
-template <typename T> struct iter_tag<T *> {
+template <typename T> struct iterator_tag<T *> {
     using type = mystd::random_access_iterator_tag;
 };
 
 template <typename I, typename Tag>
-concept matches_iterator_tag =
-    requires { typename iter_tag<I>::type; } && std::derived_from<typename iter_tag<I>::type, Tag>;
+concept matches_iterator_tag = requires { typename iterator_tag<I>::type; } &&
+                               std::derived_from<typename iterator_tag<I>::type, Tag>;
+
+template <typename I> struct iterator_traits {
+    using value_type = I::value_type;
+};
+
+template <typename T> struct iterator_traits<T *> {
+    using value_type = T;
+};
 
 // clang-format off
 
@@ -95,13 +103,16 @@ template <typename I>
 concept input_iterator =
     input_or_output_iterator<I> &&
     std::indirectly_readable<I> &&
-    matches_iterator_tag<I, input_iterator_tag>;
+    matches_iterator_tag<I, input_iterator_tag> &&
+    // NOTE: This is not part of std::input_iterator, only LegacyInputIterator. I'm adding it for
+    // the sake of algorithm practicality.
+    std::equality_comparable<I>;
 
 /**
  * forward_iterator - input_iterator (and optionally output_iterator), with semantics.
  * [semantics]
  *  - for i and j, comparison is defined only over the same sequence, or if value-initialized
- *  - multipass guarantee (i.e. copies are independent, as enabled by incrementable<T>'s copy semantics)
+ *  - multipass guarantee (i.e. copies are independent, as per incrementable<T>'s copy semantics)
  *      - if i == j, then ++i == ++j
  *      - *i == ((void)[](auto x){ ++x; }(i), *i)
  */

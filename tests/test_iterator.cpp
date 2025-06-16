@@ -188,6 +188,7 @@ TEST(Iterator, InputIteratorConcept) {
         value_type *operator++(int) { return 0; }
 
         value_type &operator*() const { return shared; }
+        bool operator==(const Valid &other) const { return true; }
     };
     EXPECT_TRUE(mystd::input_iterator<Valid>);
 
@@ -199,6 +200,7 @@ TEST(Iterator, InputIteratorConcept) {
         value_type *operator++(int) { return 0; }
 
         value_type &operator*() const { return shared; }
+        bool operator==(const Valid &other) const { return true; }
     };
     EXPECT_FALSE(mystd::input_or_output_iterator<NotInputOrOutputIterator>);
     EXPECT_TRUE(std::indirectly_readable<NotInputOrOutputIterator>);
@@ -212,6 +214,7 @@ TEST(Iterator, InputIteratorConcept) {
         value_type *operator++(int) { return 0; }
 
         value_type &operator*() { return shared; }
+        bool operator==(const Valid &other) const { return true; }
     };
     EXPECT_TRUE(mystd::input_or_output_iterator<NotIndirectlyReadable>);
     EXPECT_FALSE(std::indirectly_readable<NotIndirectlyReadable>);
@@ -226,6 +229,17 @@ TEST(Iterator, InputIteratorConcept) {
         value_type &operator*() const { return shared; }
     };
     EXPECT_FALSE(mystd::input_iterator<NoTag>);
+
+    struct NotEqualityComparable {
+        using value_type = int;
+        using iterator_category = mystd::input_iterator_tag;
+
+        NotEqualityComparable &operator++() { return *this; }
+        value_type *operator++(int) { return 0; }
+
+        value_type &operator*() const { return shared; }
+    };
+    EXPECT_FALSE(mystd::input_iterator<NotEqualityComparable>);
 }
 
 TEST(Iterator, ForwardIteratorConcept) {
