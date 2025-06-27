@@ -134,6 +134,25 @@ concept bidirectional_iterator =
         { i-- } -> std::same_as<I>;
     } &&
     matches_iterator_tag<I, bidirectional_iterator_tag>;
+
+/**
+ * [semantics]
+ * - TODO
+ */
+template <typename I>
+concept random_access_iterator =
+    bidirectional_iterator<I> &&
+    std::totally_ordered<I> &&
+    std::sized_sentinel_for<I, I> &&
+    requires(I i, const I j, const iterator_traits<I>::difference_type n) {
+        { i += n } -> std::same_as<I &>;
+        { i -= n } -> std::same_as<I &>;
+        { j + n } -> std::same_as<I>;
+        { j - n } -> std::same_as<I>;
+        { j[n] } -> std::same_as<typename iterator_traits<I>::reference>;
+    } &&
+    matches_iterator_tag<I, random_access_iterator_tag>;
+
 // clang-format on
 
 } // namespace mystd

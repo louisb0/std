@@ -345,7 +345,181 @@ TEST(Iterator, BidirectionalIteratorConcept) {
     EXPECT_FALSE(mystd::bidirectional_iterator<NotDecrementable>);
 }
 
-        bool operator==(const NoTag &other) const { return true; }
+TEST(Iterator, RandomAccessIteratorConcept) {
+    static int shared;
+
+    struct Valid {
+        using difference_type = std::ptrdiff_t;
+        using value_type = int;
+        using pointer = int *;
+        using reference = int &;
+        using iterator_category = mystd::random_access_iterator_tag;
+
+        Valid &operator++() { return *this; }
+        Valid operator++(int) { return *this; }
+
+        reference operator*() const { return shared; }
+        bool operator==(const Valid &other) const { return true; }
+
+        Valid &operator--() { return *this; }
+        Valid operator--(int) { return *this; }
+
+        bool operator<(const Valid &other) const { return true; }
+        bool operator<=(const Valid &other) const { return true; }
+        bool operator>(const Valid &other) const { return false; }
+        bool operator>=(const Valid &other) const { return false; }
+
+        difference_type operator-(const Valid &other) const { return 1; }
+
+        Valid &operator+=(difference_type n) { return *this; }
+        Valid &operator-=(difference_type n) { return *this; }
+
+        Valid operator+(difference_type n) const { return *this; }
+        Valid operator-(difference_type n) const { return *this; }
+
+        reference operator[](difference_type n) const { return shared; }
     };
-    EXPECT_FALSE(mystd::forward_iterator<NoTag>);
+    EXPECT_TRUE(mystd::random_access_iterator<Valid>);
+
+    struct NotBidirectional {
+        using difference_type = std::ptrdiff_t;
+        using value_type = int;
+        using pointer = int *;
+        using reference = int &;
+        using iterator_category = mystd::random_access_iterator_tag;
+
+        NotBidirectional &operator++() { return *this; }
+        NotBidirectional operator++(int) { return *this; }
+
+        reference operator*() const { return shared; }
+        bool operator==(const NotBidirectional &other) const { return true; }
+
+        // NotBidirectional &operator--() { return *this; }
+        // NotBidirectional operator--(int) { return *this; }
+
+        bool operator<(const NotBidirectional &other) const { return true; }
+        bool operator<=(const NotBidirectional &other) const { return true; }
+        bool operator>(const NotBidirectional &other) const { return false; }
+        bool operator>=(const NotBidirectional &other) const { return false; }
+
+        difference_type operator-(const NotBidirectional &other) const { return 1; }
+
+        NotBidirectional &operator+=(difference_type n) { return *this; }
+        NotBidirectional &operator-=(difference_type n) { return *this; }
+
+        NotBidirectional operator+(difference_type n) const { return *this; }
+        NotBidirectional operator-(difference_type n) const { return *this; }
+
+        reference operator[](difference_type n) const { return shared; }
+    };
+    EXPECT_FALSE(mystd::bidirectional_iterator<NotBidirectional>);
+    EXPECT_FALSE(mystd::random_access_iterator<NotBidirectional>);
+
+    struct NotTotallyOrdered {
+        using difference_type = std::ptrdiff_t;
+        using value_type = int;
+        using pointer = int *;
+        using reference = int &;
+        using iterator_category = mystd::random_access_iterator_tag;
+
+        NotTotallyOrdered &operator++() { return *this; }
+        NotTotallyOrdered operator++(int) { return *this; }
+
+        reference operator*() const { return shared; }
+        bool operator==(const NotTotallyOrdered &other) const { return true; }
+
+        NotTotallyOrdered &operator--() { return *this; }
+        NotTotallyOrdered operator--(int) { return *this; }
+
+        // bool operator<(const NotTotallyOrdered &other) const { return true; }
+        // bool operator<=(const NotTotallyOrdered &other) const { return true; }
+        // bool operator>(const NotTotallyOrdered &other) const { return false; }
+        // bool operator>=(const NotTotallyOrdered &other) const { return false; }
+
+        difference_type operator-(const NotTotallyOrdered &other) const { return 1; }
+
+        NotTotallyOrdered &operator+=(difference_type n) { return *this; }
+        NotTotallyOrdered &operator-=(difference_type n) { return *this; }
+
+        NotTotallyOrdered operator+(difference_type n) const { return *this; }
+        NotTotallyOrdered operator-(difference_type n) const { return *this; }
+
+        reference operator[](difference_type n) const { return shared; }
+    };
+    EXPECT_TRUE(mystd::bidirectional_iterator<NotTotallyOrdered>);
+    EXPECT_FALSE(std::totally_ordered<NotTotallyOrdered>);
+    EXPECT_FALSE(mystd::random_access_iterator<NotTotallyOrdered>);
+
+    struct NotDifferenceable {
+        using difference_type = std::ptrdiff_t;
+        using value_type = int;
+        using pointer = int *;
+        using reference = int &;
+        using iterator_category = mystd::random_access_iterator_tag;
+
+        NotDifferenceable &operator++() { return *this; }
+        NotDifferenceable operator++(int) { return *this; }
+
+        reference operator*() const { return shared; }
+        bool operator==(const NotDifferenceable &other) const { return true; }
+
+        NotDifferenceable &operator--() { return *this; }
+        NotDifferenceable operator--(int) { return *this; }
+
+        bool operator<(const NotDifferenceable &other) const { return true; }
+        bool operator<=(const NotDifferenceable &other) const { return true; }
+        bool operator>(const NotDifferenceable &other) const { return false; }
+        bool operator>=(const NotDifferenceable &other) const { return false; }
+
+        // difference_type operator-(const NotDifferenceable &other) const { return 1; }
+
+        NotDifferenceable &operator+=(difference_type n) { return *this; }
+        NotDifferenceable &operator-=(difference_type n) { return *this; }
+
+        NotDifferenceable operator+(difference_type n) const { return *this; }
+        NotDifferenceable operator-(difference_type n) const { return *this; }
+
+        reference operator[](difference_type n) const { return shared; }
+    };
+    EXPECT_TRUE(mystd::bidirectional_iterator<NotDifferenceable>);
+    EXPECT_TRUE(std::totally_ordered<NotDifferenceable>);
+    EXPECT_FALSE((std::sized_sentinel_for<NotDifferenceable, NotDifferenceable>));
+    EXPECT_FALSE(mystd::random_access_iterator<NotDifferenceable>);
+
+    struct MissingNumericOverload {
+        using difference_type = std::ptrdiff_t;
+        using value_type = int;
+        using pointer = int *;
+        using reference = int &;
+        using iterator_category = mystd::random_access_iterator_tag;
+
+        MissingNumericOverload &operator++() { return *this; }
+        MissingNumericOverload operator++(int) { return *this; }
+
+        reference operator*() const { return shared; }
+        bool operator==(const MissingNumericOverload &other) const { return true; }
+
+        MissingNumericOverload &operator--() { return *this; }
+        MissingNumericOverload operator--(int) { return *this; }
+
+        bool operator<(const MissingNumericOverload &other) const { return true; }
+        bool operator<=(const MissingNumericOverload &other) const { return true; }
+        bool operator>(const MissingNumericOverload &other) const { return false; }
+        bool operator>=(const MissingNumericOverload &other) const { return false; }
+
+        difference_type operator-(const MissingNumericOverload &other) const { return 1; }
+
+        // MissingNumericOverload &operator+=(difference_type n) { return *this; }
+        // MissingNumericOverload &operator-=(difference_type n) { return *this; }
+        //
+        // MissingNumericOverload operator+(difference_type n) const { return *this; }
+        // MissingNumericOverload operator-(difference_type n) const { return *this; }
+        //
+        // reference operator[](difference_type n) const { return shared; }
+    };
+    EXPECT_TRUE(mystd::bidirectional_iterator<MissingNumericOverload>);
+    EXPECT_TRUE(std::totally_ordered<MissingNumericOverload>);
+    EXPECT_TRUE((std::sized_sentinel_for<MissingNumericOverload, MissingNumericOverload>));
+    EXPECT_FALSE(mystd::random_access_iterator<MissingNumericOverload>);
+}
 }
