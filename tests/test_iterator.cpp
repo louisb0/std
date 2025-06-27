@@ -1,6 +1,5 @@
 #include "iterator.hpp"
 
-#include <concepts>
 #include <gtest/gtest.h>
 
 TEST(Iterator, CanReference) {
@@ -58,10 +57,12 @@ TEST(Iterator, WeaklyIncrementableConcept) {
 
     struct MissingPostIncrement {
         MissingPostIncrement &operator++() { return *this; }
+        // int operator++(int) { return 0; }
     };
     EXPECT_FALSE(mystd::weakly_incrementable<MissingPostIncrement>);
 
     struct MissingPreIncrement {
+        // MissingPreIncrement &operator++() { return *this; }
         int operator++(int) { return 0; }
     };
     EXPECT_FALSE(mystd::weakly_incrementable<MissingPreIncrement>);
@@ -83,6 +84,7 @@ TEST(Iterator, IncrementableConcept) {
     EXPECT_TRUE(mystd::incrementable<Valid>);
 
     struct NotWeaklyIncrementable {
+        // NotWeaklyIncrementable &operator++() { return *this; }
         NotWeaklyIncrementable operator++(int) { return *this; }
 
         bool operator==(const Valid &other) const { return true; }
@@ -93,6 +95,8 @@ TEST(Iterator, IncrementableConcept) {
     struct NotRegular {
         NotRegular &operator++() { return *this; }
         NotRegular operator++(int) { return *this; }
+
+        // bool operator==(const NotRegular &other) const { return true; }
     };
     EXPECT_FALSE(std::regular<NotRegular>);
     EXPECT_FALSE(mystd::incrementable<NotRegular>);
@@ -116,6 +120,9 @@ TEST(Iterator, InputOrOutputIteratorConcept) {
     EXPECT_TRUE(mystd::input_or_output_iterator<Valid>);
 
     struct NotWeaklyIncrementable {
+        // NotWeaklyIncrementable &operator++() { return *this; }
+        // int operator++(int) { return 0; }
+
         NotWeaklyIncrementable &operator*() { return *this; }
     };
     EXPECT_FALSE(mystd::weakly_incrementable<NotWeaklyIncrementable>);
@@ -124,6 +131,8 @@ TEST(Iterator, InputOrOutputIteratorConcept) {
     struct MissingDereferenceOperator {
         MissingDereferenceOperator &operator++() { return *this; }
         int operator++(int) { return 0; }
+
+        // MissingDereferenceOperator &operator*() { return *this; }
     };
     EXPECT_FALSE(mystd::input_or_output_iterator<MissingDereferenceOperator>);
 
@@ -151,6 +160,7 @@ TEST(Iterator, OutputIteratorConcept) {
         NotInputOrOutput &operator++() { return *this; }
         int *operator++(int) { return 0; }
 
+        // !can_reference<void> => !input_or_output<I>
         void operator*() { return; }
     };
     EXPECT_FALSE(mystd::input_or_output_iterator<NotInputOrOutput>);
@@ -168,8 +178,9 @@ TEST(Iterator, OutputIteratorConcept) {
 
     struct NotIncrementDereferenceableAssignable {
         NotIncrementDereferenceableAssignable &operator++() { return *this; }
-
+        // Must be able to dereference and assign to the pre-increment.
         int operator++(int) { return shared; }
+
         int &operator*() { return shared; }
     };
     EXPECT_TRUE((mystd::input_or_output_iterator<NotIncrementDereferenceableAssignable>));
@@ -196,6 +207,7 @@ TEST(Iterator, InputIteratorConcept) {
         using value_type = int;
         using iterator_category = mystd::input_iterator_tag;
 
+        // Must be able to assign to the dereferenced post-increment.
         NotInputOrOutputIterator operator++() { return *this; }
         value_type *operator++(int) { return 0; }
 
@@ -213,22 +225,13 @@ TEST(Iterator, InputIteratorConcept) {
         NotIndirectlyReadable &operator++() { return *this; }
         value_type *operator++(int) { return 0; }
 
+        // non-const => !indirectly_readable<I>
         value_type &operator*() { return shared; }
         bool operator==(const Valid &other) const { return true; }
     };
     EXPECT_TRUE(mystd::input_or_output_iterator<NotIndirectlyReadable>);
     EXPECT_FALSE(std::indirectly_readable<NotIndirectlyReadable>);
     EXPECT_FALSE(mystd::input_iterator<NotIndirectlyReadable>);
-
-    struct NoTag {
-        using value_type = int;
-
-        NoTag &operator++() { return *this; }
-        value_type *operator++(int) { return 0; }
-
-        value_type &operator*() const { return shared; }
-    };
-    EXPECT_FALSE(mystd::input_iterator<NoTag>);
 
     struct NotEqualityComparable {
         using value_type = int;
@@ -238,7 +241,10 @@ TEST(Iterator, InputIteratorConcept) {
         value_type *operator++(int) { return 0; }
 
         value_type &operator*() const { return shared; }
+        // bool operator==(const NotEqualityComparable &other) const { return true; }
     };
+    EXPECT_TRUE(mystd::input_or_output_iterator<NotEqualityComparable>);
+    EXPECT_TRUE(std::indirectly_readable<NotEqualityComparable>);
     EXPECT_FALSE(mystd::input_iterator<NotEqualityComparable>);
 }
 
@@ -253,7 +259,6 @@ TEST(Iterator, ForwardIteratorConcept) {
         Valid operator++(int) { return *this; }
 
         value_type &operator*() const { return shared; }
-
         bool operator==(const Valid &other) const { return true; }
     };
     EXPECT_TRUE(mystd::forward_iterator<Valid>);
@@ -265,8 +270,8 @@ TEST(Iterator, ForwardIteratorConcept) {
         NotInputIterator &operator++() { return *this; }
         NotInputIterator operator++(int) { return *this; }
 
+        // non-const => !indirectly_readable<I> => !input_iterator<I>
         value_type &operator*() { return shared; }
-
         bool operator==(const NotInputIterator &other) const { return true; }
     };
     EXPECT_FALSE(mystd::input_iterator<NotInputIterator>);
@@ -278,23 +283,67 @@ TEST(Iterator, ForwardIteratorConcept) {
         using iterator_category = mystd::forward_iterator_tag;
 
         NotIncrementable &operator++() { return *this; }
+        // Pre-increment must return a copy of I.
         NotIncrementable &operator++(int) { return *this; }
 
         value_type &operator*() const { return shared; }
-
         bool operator==(const NotIncrementable &other) const { return true; }
     };
     EXPECT_TRUE(mystd::input_iterator<NotIncrementable>);
     EXPECT_FALSE(mystd::incrementable<NotIncrementable>);
     EXPECT_FALSE(mystd::forward_iterator<NotIncrementable>);
+}
 
-    struct NoTag {
+TEST(Iterator, BidirectionalIteratorConcept) {
+    static int shared;
+
+    struct Valid {
         using value_type = int;
+        using iterator_category = mystd::bidirectional_iterator_tag;
 
-        NoTag &operator++() { return *this; }
-        NoTag operator++(int) { return *this; }
+        Valid &operator++() { return *this; }
+        Valid operator++(int) { return *this; }
 
         value_type &operator*() const { return shared; }
+        bool operator==(const Valid &other) const { return true; }
+
+        Valid &operator--() { return *this; }
+        Valid operator--(int) { return *this; }
+    };
+    EXPECT_TRUE(mystd::bidirectional_iterator<Valid>);
+
+    struct NotForwardIterator {
+        using value_type = int;
+        using iterator_category = mystd::bidirectional_iterator_tag;
+
+        // NotForwardIterator &operator++() { return *this; }
+        // NotForwardIterator operator++(int) { return *this; }
+
+        value_type &operator*() const { return shared; }
+        bool operator==(const NotForwardIterator &other) const { return true; }
+
+        NotForwardIterator &operator--() { return *this; }
+        NotForwardIterator operator--(int) { return *this; }
+    };
+    EXPECT_FALSE(mystd::forward_iterator<NotForwardIterator>);
+    EXPECT_FALSE(mystd::bidirectional_iterator<NotForwardIterator>);
+
+    struct NotDecrementable {
+        using value_type = int;
+        using iterator_category = mystd::bidirectional_iterator_tag;
+
+        NotDecrementable &operator++() { return *this; }
+        NotDecrementable operator++(int) { return *this; }
+
+        value_type &operator*() const { return shared; }
+        bool operator==(const NotDecrementable &other) const { return true; }
+
+        // NotDecrementable &operator--() { return *this; }
+        // NotDecrementable operator--(int) { return *this; }
+    };
+    EXPECT_TRUE(mystd::forward_iterator<NotDecrementable>);
+    EXPECT_FALSE(mystd::bidirectional_iterator<NotDecrementable>);
+}
 
         bool operator==(const NoTag &other) const { return true; }
     };

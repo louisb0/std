@@ -1,3 +1,5 @@
+#pragma once
+
 #include <concepts>
 #include <iterator>
 #include <type_traits>
@@ -41,7 +43,6 @@ template <typename T> struct iterator_traits<T *> {
 // clang-format off
 
 /**
- * weakly_incrementable - object that can be incremented
  * [semantics]:
  * - for any iterator i, either both ++i and i++ are valid or both are invalid
  * - when valid, both ++i and i++ advance to the same next iterator state
@@ -56,7 +57,6 @@ concept weakly_incrementable =
     };
 
 /**
- * incrementable - weakly_incrementable, but post-increment returns a copy
  * [semantics]:
  * - for incrementable a and b:
  *      - post-increment returns the original object, (a == b) implies (a++ == b)
@@ -71,7 +71,6 @@ concept incrementable =
     };
 
 /**
- * input_or_output_iterator - weakly_incrementable with dereferencing: an iterator
  * [semantics]
  * - equality preserving, *i == *i
  */
@@ -82,9 +81,8 @@ concept input_or_output_iterator =
     can_reference<decltype(*std::declval<I>())>;
 
 /**
- * output_iterator - input_or_output_iterator, but dereference must write-through
  * [semantics]
- * - sensible post-increment, *i++ = t is equivalent to *i = t; ++i;
+ * - sensible post-increment, i.e. *i++ = t is equivalent to *i = t; ++i;
  */
 template <typename I, typename T>
 concept output_iterator =
@@ -95,7 +93,6 @@ concept output_iterator =
     };
 
 /**
- * input_iterator - input_or_output_iterator, but deference must read-through
  * [semantics]
  *  - none
  */
@@ -103,13 +100,10 @@ template <typename I>
 concept input_iterator =
     input_or_output_iterator<I> &&
     std::indirectly_readable<I> &&
-    matches_iterator_tag<I, input_iterator_tag> &&
-    // NOTE: This is not part of std::input_iterator, only LegacyInputIterator. I'm adding it for
-    // the sake of algorithm practicality.
-    std::equality_comparable<I>;
+    std::equality_comparable<I> &&
+    matches_iterator_tag<I, input_iterator_tag>;
 
 /**
- * forward_iterator - input_iterator (and optionally output_iterator), with semantics.
  * [semantics]
  *  - for i and j, comparison is defined only over the same sequence, or if value-initialized
  *  - multipass guarantee (i.e. copies are independent, as per incrementable<T>'s copy semantics)
@@ -122,6 +116,24 @@ concept forward_iterator =
     incrementable<I> &&
     matches_iterator_tag<I, forward_iterator_tag>;
 
+/**
+ * [semantics]
+ * - an iterator i is valid if there is some ++s = i
+ * - for any iterator i, either both --i and i-- are valid or both are invalid
+ * - when valid:
+ *     -  --i returns a reference to the same object i: addressof(--a) == addressof(a)
+ *     -  i-- returns a copy of the object: if (a == b) then (a-- == b):
+ *     - increment and decrement are inverses: if (a == b) then (++(--a) == b)
+ *     - operators alter state equivalently: if (a == b), then after a-- and --b , still (a == b)
+ */
+template <typename I>
+concept bidirectional_iterator =
+    forward_iterator<I> &&
+    requires(I i) {
+        { --i } -> std::same_as<I &>;
+        { i-- } -> std::same_as<I>;
+    } &&
+    matches_iterator_tag<I, bidirectional_iterator_tag>;
 // clang-format on
 
 } // namespace mystd
