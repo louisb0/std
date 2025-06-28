@@ -7,9 +7,8 @@
 
 namespace mystd {
 
-// TODO & NOTE:
+// TODO:
 //  - implement std::forward()
-//  - implement std::indirectly_readable() and std::indirectly_writable()
 
 template <typename T>
 concept can_reference =
@@ -20,7 +19,7 @@ struct forward_iterator_tag : input_iterator_tag {};
 struct bidirectional_iterator_tag : forward_iterator_tag {};
 struct random_access_iterator_tag : bidirectional_iterator_tag {};
 
-template <typename I, typename T = void> struct iterator_tag {};
+template <typename I, typename = void> struct iterator_tag {};
 template <typename I> struct iterator_tag<I, std::void_t<typename I::iterator_category>> {
     using type = I::iterator_category;
 };
@@ -33,11 +32,25 @@ concept matches_iterator_tag = requires { typename iterator_tag<I>::type; } &&
                                std::derived_from<typename iterator_tag<I>::type, Tag>;
 
 template <typename I> struct iterator_traits {
+    using difference_type = I::difference_type;
     using value_type = I::value_type;
+    using pointer = I::pointer;
+    using reference = I::reference;
+    using iterator_category = I::iterator_category;
 };
-
 template <typename T> struct iterator_traits<T *> {
+    using difference_type = std::ptrdiff_t;
     using value_type = T;
+    using pointer = T *;
+    using reference = T &;
+    using iterator_category = random_access_iterator_tag;
+};
+template <typename T> struct iterator_traits<const T *> {
+    using difference_type = std::ptrdiff_t;
+    using value_type = T;
+    using pointer = T *;
+    using reference = T &;
+    using iterator_category = random_access_iterator_tag;
 };
 
 // clang-format off
@@ -137,7 +150,15 @@ concept bidirectional_iterator =
 
 /**
  * [semantics]
- * - TODO
+ * - all operations are constant time
+ * - for iterators a, b where b is reachable from a, and n = b - a:
+ *     - (a += n) == b and returns reference to a
+ *     - (a + n) == (a += n) == (n + a)
+ *     - addition is associative: a + (x + y) == (a + x) + y
+ *     - a + 0 == a
+ *     - subtraction inverts addition: (b -= n) == (b + (-n)) == a and returns reference to b
+ *     - if b is dereferenceable, then a[n] == *b
+ *     - a <= b is true
  */
 template <typename I>
 concept random_access_iterator =
@@ -154,5 +175,131 @@ concept random_access_iterator =
     matches_iterator_tag<I, random_access_iterator_tag>;
 
 // clang-format on
+
+template <bidirectional_iterator I> class reverse_iterator {
+    I _current{I()};
+
+public:
+    using iterator_type = I;
+
+    using difference_type = iterator_traits<I>::difference_type;
+    using value_type = iterator_traits<I>::value_type;
+    using pointer = iterator_traits<I>::pointer;
+    using reference = iterator_traits<I>::reference;
+    using iterator_category = iterator_traits<I>::iterator_category;
+
+    reverse_iterator() = default;
+
+    explicit reverse_iterator(iterator_type iter) : _current(iter) {}
+
+    template <typename U>
+        requires(!std::is_same_v<U, I> && std::convertible_to<U, I>)
+    reverse_iterator(const reverse_iterator<U> &other) : _current(other.base()) {}
+
+    iterator_type base() const noexcept { return _current; }
+
+    reference operator*() const noexcept {
+        iterator_type tmp = _current;
+        return *--tmp;
+    }
+
+    pointer operator->() const noexcept { return std::addressof(operator*()); }
+
+    reference operator[](difference_type n) const noexcept
+        requires random_access_iterator<I>
+    {
+        return _current[-1 - n];
+    }
+
+    reverse_iterator &operator++() noexcept {
+        --_current;
+        return *this;
+    }
+
+    reverse_iterator &operator--() noexcept {
+        ++_current;
+        return *this;
+    }
+
+    reverse_iterator operator++(int) noexcept {
+        reverse_iterator tmp = *this;
+        --_current;
+        return tmp;
+    }
+
+    reverse_iterator operator--(int) noexcept {
+        reverse_iterator tmp = *this;
+        _current++;
+        return tmp;
+    }
+
+    reverse_iterator operator+(difference_type n) const noexcept
+        requires random_access_iterator<I>
+    {
+        return reverse_iterator(_current - n);
+    }
+
+    reverse_iterator operator-(difference_type n) const noexcept
+        requires random_access_iterator<I>
+    {
+        return reverse_iterator(_current + n);
+    }
+
+    reverse_iterator &operator+=(difference_type n) noexcept
+        requires random_access_iterator<I>
+    {
+        _current -= n;
+        return *this;
+    }
+
+    reverse_iterator &operator-=(difference_type n) noexcept
+        requires random_access_iterator<I>
+    {
+        _current += n;
+        return *this;
+    }
+};
+
+template <typename I1, typename I2>
+bool operator==(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs) {
+    return lhs.base() == rhs.base();
+}
+
+template <typename I1, typename I2>
+bool operator!=(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs) {
+    return lhs.base() != rhs.base();
+}
+
+template <typename I1, typename I2>
+bool operator<(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs) {
+    return lhs.base() > rhs.base();
+}
+
+template <typename I1, typename I2>
+bool operator<=(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs) {
+    return lhs.base() >= rhs.base();
+}
+
+template <typename I1, typename I2>
+bool operator>(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs) {
+    return lhs.base() < rhs.base();
+}
+
+template <typename I1, typename I2>
+bool operator>=(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs) {
+    return lhs.base() <= rhs.base();
+}
+
+template <typename I>
+reverse_iterator<I> operator+(typename reverse_iterator<I>::difference_type n,
+                              const reverse_iterator<I> &it) {
+    return it.operator+(n);
+}
+
+template <typename I1, typename I2>
+auto operator-(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs)
+    -> decltype(rhs.base() - lhs.base()) {
+    return rhs.base() - lhs.base();
+}
 
 } // namespace mystd

@@ -522,4 +522,99 @@ TEST(Iterator, RandomAccessIteratorConcept) {
     EXPECT_TRUE((std::sized_sentinel_for<MissingNumericOverload, MissingNumericOverload>));
     EXPECT_FALSE(mystd::random_access_iterator<MissingNumericOverload>);
 }
+
+TEST(Iterator, ReverseIterator) {
+    int data[5] = {1, 2, 3, 4, 5};
+
+    // Constructors
+    mystd::reverse_iterator<int *> rit(data + 5);
+    EXPECT_EQ(rit.base(), data + 5);
+
+    mystd::reverse_iterator<int *> default_rit;
+    EXPECT_EQ(default_rit.base(), (int *){});
+
+    mystd::reverse_iterator<const int *> const_rit(rit);
+    EXPECT_EQ(const_rit.base(), rit.base());
+
+    // operator->
+    struct Wrapper {
+        int v;
+    };
+    Wrapper structs[3] = {{10}, {20}, {30}};
+    mystd::reverse_iterator<Wrapper *> struct_rit(structs + 3);
+    EXPECT_EQ(struct_rit->v, 30);
+
+    // operator++
+    mystd::reverse_iterator pre_inc(data + 5);
+    auto &pre_inc_ref = ++pre_inc;
+    EXPECT_EQ(*pre_inc, 4);
+    EXPECT_EQ(&pre_inc_ref, &pre_inc);
+
+    // operator--
+    mystd::reverse_iterator pre_dec(data + 4);
+    auto &pre_dec_ref = --pre_dec;
+    EXPECT_EQ(*pre_dec, 5);
+    EXPECT_EQ(&pre_dec_ref, &pre_dec);
+
+    // operator++(int)
+    mystd::reverse_iterator post_inc(data + 5);
+    auto post_inc_old = post_inc++;
+    EXPECT_EQ(*post_inc, 4);
+    EXPECT_EQ(*post_inc_old, 5);
+
+    // operator--(int)
+    mystd::reverse_iterator post_dec(data + 4);
+    auto post_dec_old = post_dec--;
+    EXPECT_EQ(*post_dec, 5);
+    EXPECT_EQ(*post_dec_old, 4);
+
+    // operator+ / operator-
+    mystd::reverse_iterator arith_rit(data + 5);
+
+    auto plus_result = arith_rit + 4;
+    EXPECT_EQ(*plus_result, 1);
+    EXPECT_EQ(*arith_rit, 5);
+
+    auto commutative_result = 4 + arith_rit;
+    EXPECT_EQ(*commutative_result, 1);
+    EXPECT_EQ(*arith_rit, 5);
+
+    plus_result = plus_result - 4;
+    EXPECT_EQ(*plus_result, 5);
+    EXPECT_EQ(*arith_rit, 5);
+
+    // operator- non-member difference
+    mystd::reverse_iterator diff_left(data + 5);
+    mystd::reverse_iterator diff_right(data);
+    EXPECT_EQ(diff_left - diff_right, -5);
+    diff_left++;
+    EXPECT_EQ(diff_right - diff_left, 4);
+
+    // operator+=
+    mystd::reverse_iterator plus_eq(data + 5);
+    EXPECT_EQ(&(plus_eq += 3), &plus_eq);
+    EXPECT_EQ(*plus_eq, 2);
+
+    // operator-=
+    mystd::reverse_iterator minus_eq(data + 2);
+    EXPECT_EQ(&(minus_eq -= 3), &minus_eq);
+    EXPECT_EQ(*minus_eq, 5);
+
+    // comparison
+    mystd::reverse_iterator high(data);
+    mystd::reverse_iterator mid(data + 3);
+    mystd::reverse_iterator low(data + 5);
+
+    EXPECT_LT(low, mid);
+    EXPECT_LE(mid, high);
+
+    EXPECT_GT(high, mid);
+    EXPECT_GE(mid, low);
+
+    EXPECT_TRUE(low == low);
+    EXPECT_FALSE(low == mid);
+
+    EXPECT_FALSE(low != low);
+    EXPECT_TRUE(low != mid);
+}
 }
