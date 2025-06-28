@@ -1,6 +1,7 @@
 #include "memory.hpp"
 
 #include <gtest/gtest.h>
+
 #include <string>
 
 TEST(Memory, UninitializedCopyPODType) {
