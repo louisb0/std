@@ -48,8 +48,8 @@ template <typename T> struct iterator_traits<T *> {
 template <typename T> struct iterator_traits<const T *> {
     using difference_type = std::ptrdiff_t;
     using value_type = T;
-    using pointer = T *;
-    using reference = T &;
+    using pointer = const T *;
+    using reference = const T &;
     using iterator_category = random_access_iterator_tag;
 };
 
@@ -301,5 +301,27 @@ auto operator-(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs)
     -> decltype(rhs.base() - lhs.base()) {
     return rhs.base() - lhs.base();
 }
+
+template <typename T> class initializer_list;
+
+template <typename T> bool empty(const initializer_list<T> &il) { return il.size() == 0; }
+
+template <typename T> const T *data(const initializer_list<T> &il) { return il.begin(); }
+
+template <typename T> reverse_iterator<const T *> rbegin(const initializer_list<T> &il) {
+    return reverse_iterator(il.end());
+};
+
+template <typename T> reverse_iterator<const T *> crbegin(const initializer_list<T> &il) {
+    return reverse_iterator(il.end());
+};
+
+template <typename T> reverse_iterator<const T *> rend(const initializer_list<T> &il) {
+    return reverse_iterator(il.begin());
+};
+
+template <typename T> reverse_iterator<const T *> crend(const initializer_list<T> &il) {
+    return reverse_iterator(il.begin());
+};
 
 } // namespace mystd

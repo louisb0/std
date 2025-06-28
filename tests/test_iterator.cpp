@@ -1,3 +1,4 @@
+#include "initializer_list.hpp"
 #include "iterator.hpp"
 
 #include <gtest/gtest.h>
@@ -617,4 +618,17 @@ TEST(Iterator, ReverseIterator) {
     EXPECT_FALSE(low != low);
     EXPECT_TRUE(low != mid);
 }
+
+TEST(Iterator, FreeFunctions) {
+    std::vector<int> container = {1, 2, 3};
+    (void)empty(container);
+    (void)data(container);
+
+    std::vector<int> const_container = {1, 2, 3};
+    (void)empty(const_container);
+    (void)data(const_container);
+
+    mystd::initializer_list<int> il = {1, 2, 3};
+    (void)empty(il);
+    (void)data(il);
 }
