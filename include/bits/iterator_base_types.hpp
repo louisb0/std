@@ -14,9 +14,9 @@ template <typename Category, typename T, typename Distance = std::ptrdiff_t, typ
 struct iterator {
     using iterator_category = Category;
     using value_type = T;
-    using difference_type = Distance;
     using pointer = Pointer;
     using reference = Reference;
+    using difference_type = Distance;
 };
 
 template <typename I> struct iterator_traits {
