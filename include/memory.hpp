@@ -40,4 +40,17 @@ template <forward_iterator I> void uninitialized_default_construct(I first, I la
     }
 }
 
+template <forward_iterator I, typename T> void uninitialized_fill(I first, I last, const T &value) {
+    using V = typename iterator_traits<I>::value_type;
+
+    I current = first;
+    try {
+        for (; current != last; current++)
+            ::new (static_cast<void *>(std::addressof(*current))) V(value);
+    } catch (...) {
+        destroy(first, current);
+        throw;
+    }
+}
+
 } // namespace mystd

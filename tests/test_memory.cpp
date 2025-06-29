@@ -4,86 +4,141 @@
 
 #include <string>
 
-TEST(Memory, UninitializedCopyPODType) {
-    alignas(int) std::byte buffer[sizeof(int) * 3];
-    int src[3] = {1, 2, 3};
-    int *dest = reinterpret_cast<int *>(buffer);
-
-    auto it = mystd::uninitialized_copy(src, src + 3, dest);
-    EXPECT_EQ(it, dest + 3);
-
-    for (int i = 0; i < 3; i++) {
-        EXPECT_EQ(dest[i], src[i]);
-    }
-}
-
-TEST(Memory, UninitializedCopyClassType) {
-    alignas(std::string) std::byte buffer[sizeof(std::string) * 3];
-    std::string src[3] = {"hello", "world", "test"};
+TEST(Memory, UninitializedCopyString) {
+    constexpr size_t count = 3;
+    alignas(std::string) std::byte buffer[sizeof(std::string) * count];
+    std::string src[count] = {"hello", "world", "test"};
     std::string *dest = reinterpret_cast<std::string *>(buffer);
 
-    auto it = mystd::uninitialized_copy(src, src + 3, dest);
-    EXPECT_EQ(it, dest + 3);
+    auto result = mystd::uninitialized_copy(src, src + count, dest);
 
-    for (int i = 0; i < 3; i++) {
+    EXPECT_EQ(result, dest + count);
+    for (size_t i = 0; i < count; ++i) {
         EXPECT_EQ(dest[i], src[i]);
     }
 }
 
 TEST(Memory, UninitializedDefaultConstruct) {
-    alignas(int) std::byte buffer[sizeof(std::string) * 3];
+    constexpr size_t count = 3;
+    alignas(std::string) std::byte buffer[sizeof(std::string) * count];
     std::string *dest = reinterpret_cast<std::string *>(buffer);
 
-    mystd::uninitialized_default_construct(dest, dest + 3);
-    for (int i = 0; i < 3; i++) {
+    mystd::uninitialized_default_construct(dest, dest + count);
+
+    for (size_t i = 0; i < count; ++i) {
         EXPECT_EQ(dest[i], "");
     }
 }
 
-struct ThrowOnThirdCopy {
-    static inline size_t copy_count = 0;
+TEST(Memory, UninitializedFill) {
+    constexpr size_t count = 3;
+    alignas(std::string) std::byte buffer[sizeof(std::string) * count];
+    std::string *dest = reinterpret_cast<std::string *>(buffer);
 
-    ThrowOnThirdCopy() = default;
-    ThrowOnThirdCopy(const ThrowOnThirdCopy &other) {
-        if (copy_count + 1 == 3) {
-            throw std::runtime_error("third copy");
+    mystd::uninitialized_fill(dest, dest + count, "test");
+
+    for (size_t i = 0; i < count; ++i) {
+        EXPECT_EQ(dest[i], "test");
+    }
+}
+
+class CopyCounter {
+public:
+    CopyCounter() = default;
+
+    CopyCounter(const CopyCounter &) {
+        if (copy_count + 1 == failure_point) {
+            throw std::runtime_error("Copy failed at designated point");
         }
 
         copy_count++;
     }
 
-    ~ThrowOnThirdCopy() { copy_count--; }
+    ~CopyCounter() {
+        if (copy_count > 0) {
+            --copy_count;
+        }
+    }
+
+    static void reset(size_t fail_at = SIZE_MAX) {
+        copy_count = 0;
+        failure_point = fail_at;
+    }
+
+    static size_t get_count() { return copy_count; }
+
+private:
+    static size_t copy_count;
+    static size_t failure_point;
 };
 
-TEST(Memory, UninitializedCopyThrows) {
-    alignas(ThrowOnThirdCopy) std::byte buffer[sizeof(ThrowOnThirdCopy) * 3];
-    ThrowOnThirdCopy src[3];
-    ThrowOnThirdCopy *dest = reinterpret_cast<ThrowOnThirdCopy *>(buffer);
+size_t CopyCounter::copy_count = 0;
+size_t CopyCounter::failure_point = SIZE_MAX;
 
-    EXPECT_EQ(ThrowOnThirdCopy::copy_count, 0);
-    EXPECT_THROW({ mystd::uninitialized_copy(src, src + 3, dest); }, std::runtime_error);
-    EXPECT_EQ(ThrowOnThirdCopy::copy_count, 0);
+TEST(Memory, UninitializedCopyExceptionSafety) {
+    constexpr size_t count = 5;
+    alignas(CopyCounter) std::byte buffer[sizeof(CopyCounter) * count];
+    CopyCounter src[count];
+    CopyCounter *dest = reinterpret_cast<CopyCounter *>(buffer);
+
+    CopyCounter::reset(3);
+
+    EXPECT_THROW({ mystd::uninitialized_copy(src, src + count, dest); }, std::runtime_error);
+    EXPECT_EQ(CopyCounter::get_count(), 0);
 }
 
-struct ThrowOnThirdConstruct {
-    static inline size_t construct_count = 0;
-
-    ThrowOnThirdConstruct() {
-        if (construct_count + 1 == 3) {
-            throw std::runtime_error("third construct");
+class ConstructCounter {
+public:
+    explicit ConstructCounter(int value = 0) : _value(value) {
+        if (construct_count + 1 == failure_point) {
+            throw std::runtime_error("Construction failed at designated point");
         }
 
         construct_count++;
     }
 
-    ~ThrowOnThirdConstruct() { construct_count--; }
+    ~ConstructCounter() {
+        if (construct_count > 0) {
+            --construct_count;
+        }
+    }
+
+    int value() const { return _value; }
+
+    static void reset(size_t fail_at = SIZE_MAX) {
+        construct_count = 0;
+        failure_point = fail_at;
+    }
+
+    static size_t get_count() { return construct_count; }
+
+private:
+    int _value;
+    static size_t construct_count;
+    static size_t failure_point;
 };
 
-TEST(Memory, UninitializedDefaultconstructThrows) {
-    alignas(ThrowOnThirdConstruct) std::byte buffer[sizeof(ThrowOnThirdConstruct) * 3];
-    ThrowOnThirdConstruct *dest = reinterpret_cast<ThrowOnThirdConstruct *>(buffer);
+size_t ConstructCounter::construct_count = 0;
+size_t ConstructCounter::failure_point = SIZE_MAX;
 
-    EXPECT_EQ(ThrowOnThirdConstruct::construct_count, 0);
-    EXPECT_THROW({ mystd::uninitialized_default_construct(dest, dest + 3); }, std::runtime_error);
-    EXPECT_EQ(ThrowOnThirdConstruct::construct_count, 0);
+TEST(Memory, UninitializedDefaultConstructExceptionSafety) {
+    constexpr size_t count = 5;
+    alignas(ConstructCounter) std::byte buffer[sizeof(ConstructCounter) * count];
+    ConstructCounter *dest = reinterpret_cast<ConstructCounter *>(buffer);
+
+    ConstructCounter::reset(3);
+
+    EXPECT_THROW(
+        { mystd::uninitialized_default_construct(dest, dest + count); }, std::runtime_error);
+    EXPECT_EQ(ConstructCounter::get_count(), 0);
+}
+
+TEST(Memory, UninitializedFillExceptionSafety) {
+    constexpr size_t count = 5;
+    alignas(ConstructCounter) std::byte buffer[sizeof(ConstructCounter) * count];
+    ConstructCounter *dest = reinterpret_cast<ConstructCounter *>(buffer);
+
+    ConstructCounter::reset(3);
+    EXPECT_THROW({ mystd::uninitialized_fill(dest, dest + count, 1); }, std::runtime_error);
+    EXPECT_EQ(ConstructCounter::get_count(), 0);
 }
