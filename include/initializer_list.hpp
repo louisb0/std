@@ -10,9 +10,6 @@
 
 namespace mystd {
 
-// NOTE: std::initializer_list works with memory managed by the compiler, which we cannot do. This
-// means the class must make deep copies and is not as lightweight as it is intended to be.
-
 template <typename T> class initializer_list {
 private:
     T _data[16];

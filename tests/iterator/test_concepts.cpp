@@ -1,55 +1,8 @@
-#include "initializer_list.hpp"
 #include "iterator.hpp"
 
 #include <gtest/gtest.h>
 
-TEST(Iterator, CanReference) {
-    // object types - (possibly cv-qualified) non function, non reference, non void
-    EXPECT_TRUE(mystd::can_reference<int>);
-    EXPECT_TRUE(mystd::can_reference<const int>);
-    EXPECT_TRUE(mystd::can_reference<volatile int>);
-    EXPECT_TRUE(mystd::can_reference<int *>);
-    EXPECT_TRUE(mystd::can_reference<int[5]>);
-    EXPECT_TRUE(mystd::can_reference<int (*)()>);
-    EXPECT_FALSE(mystd::can_reference<void>);
-    EXPECT_FALSE(mystd::can_reference<const void>);
-    EXPECT_FALSE(mystd::can_reference<volatile void>);
-
-    // function types without cv and ref
-    EXPECT_TRUE(mystd::can_reference<int()>);
-    EXPECT_FALSE(mystd::can_reference<int() const>);
-    EXPECT_FALSE(mystd::can_reference<int() volatile>);
-    EXPECT_FALSE(mystd::can_reference<int() const volatile>);
-    EXPECT_FALSE(mystd::can_reference<int() &>);
-    EXPECT_FALSE(mystd::can_reference<int() &&>);
-
-    // reference types
-    EXPECT_TRUE(mystd::can_reference<int &>);
-    EXPECT_TRUE(mystd::can_reference<int (&)()>);
-    EXPECT_TRUE(mystd::can_reference<const int &>);
-    EXPECT_TRUE(mystd::can_reference<int &&>);
-}
-
-TEST(Iterator, MatchesIteratorTag) {
-    struct TaggedForwardIterator {
-        using iterator_category = mystd::forward_iterator_tag;
-    };
-    EXPECT_TRUE((mystd::matches_iterator_tag<TaggedForwardIterator, mystd::input_iterator_tag>));
-    EXPECT_TRUE((mystd::matches_iterator_tag<TaggedForwardIterator, mystd::forward_iterator_tag>));
-    EXPECT_FALSE(
-        (mystd::matches_iterator_tag<TaggedForwardIterator, mystd::bidirectional_iterator_tag>));
-
-    struct bad_tag {};
-    struct TaggedIncorrectly {
-        using iterator_category = bad_tag;
-    };
-    EXPECT_FALSE((mystd::matches_iterator_tag<TaggedIncorrectly, mystd::input_iterator_tag>));
-
-    struct MissingTag {};
-    EXPECT_FALSE((mystd::matches_iterator_tag<MissingTag, mystd::input_iterator_tag>));
-}
-
-TEST(Iterator, WeaklyIncrementableConcept) {
+TEST(IteratorConcepts, WeaklyIncrementableConcept) {
     struct Valid {
         Valid &operator++() { return *this; }
         int operator++(int) { return 0; }
@@ -75,7 +28,7 @@ TEST(Iterator, WeaklyIncrementableConcept) {
     EXPECT_FALSE(mystd::weakly_incrementable<PreIncrementReturnsValue>);
 }
 
-TEST(Iterator, IncrementableConcept) {
+TEST(IteratorConcepts, IncrementableConcept) {
     struct Valid {
         Valid &operator++() { return *this; }
         Valid operator++(int) { return *this; }
@@ -111,7 +64,7 @@ TEST(Iterator, IncrementableConcept) {
     EXPECT_FALSE(mystd::incrementable<PostIncrementNotCopy>);
 }
 
-TEST(Iterator, InputOrOutputIteratorConcept) {
+TEST(IteratorConcepts, InputOrOutputIteratorConcept) {
     struct Valid {
         Valid &operator++() { return *this; }
         int operator++(int) { return 0; }
@@ -146,7 +99,7 @@ TEST(Iterator, InputOrOutputIteratorConcept) {
     EXPECT_FALSE(mystd::input_or_output_iterator<DereferenceNotReferencable>);
 }
 
-TEST(Iterator, OutputIteratorConcept) {
+TEST(IteratorConcepts, OutputIteratorConcept) {
     static int shared;
 
     struct Valid {
@@ -189,13 +142,10 @@ TEST(Iterator, OutputIteratorConcept) {
     EXPECT_FALSE((mystd::output_iterator<NotIncrementDereferenceableAssignable, int>));
 }
 
-TEST(Iterator, InputIteratorConcept) {
+TEST(IteratorConcepts, InputIteratorConcept) {
     static int shared;
 
-    struct Valid {
-        using value_type = int;
-        using iterator_category = mystd::input_iterator_tag;
-
+    struct Valid : mystd::iterator<mystd::input_iterator_tag, int> {
         Valid &operator++() { return *this; }
         value_type *operator++(int) { return 0; }
 
@@ -204,10 +154,7 @@ TEST(Iterator, InputIteratorConcept) {
     };
     EXPECT_TRUE(mystd::input_iterator<Valid>);
 
-    struct NotInputOrOutputIterator {
-        using value_type = int;
-        using iterator_category = mystd::input_iterator_tag;
-
+    struct NotInputOrOutputIterator : mystd::iterator<mystd::input_iterator_tag, int> {
         // Must be able to assign to the dereferenced post-increment.
         NotInputOrOutputIterator operator++() { return *this; }
         value_type *operator++(int) { return 0; }
@@ -219,10 +166,7 @@ TEST(Iterator, InputIteratorConcept) {
     EXPECT_TRUE(std::indirectly_readable<NotInputOrOutputIterator>);
     EXPECT_FALSE(mystd::input_iterator<NotInputOrOutputIterator>);
 
-    struct NotIndirectlyReadable {
-        using value_type = int;
-        using iterator_category = mystd::input_iterator_tag;
-
+    struct NotIndirectlyReadable : mystd::iterator<mystd::input_iterator_tag, int> {
         NotIndirectlyReadable &operator++() { return *this; }
         value_type *operator++(int) { return 0; }
 
@@ -234,10 +178,7 @@ TEST(Iterator, InputIteratorConcept) {
     EXPECT_FALSE(std::indirectly_readable<NotIndirectlyReadable>);
     EXPECT_FALSE(mystd::input_iterator<NotIndirectlyReadable>);
 
-    struct NotEqualityComparable {
-        using value_type = int;
-        using iterator_category = mystd::input_iterator_tag;
-
+    struct NotEqualityComparable : mystd::iterator<mystd::input_iterator_tag, int> {
         NotEqualityComparable &operator++() { return *this; }
         value_type *operator++(int) { return 0; }
 
@@ -249,13 +190,10 @@ TEST(Iterator, InputIteratorConcept) {
     EXPECT_FALSE(mystd::input_iterator<NotEqualityComparable>);
 }
 
-TEST(Iterator, ForwardIteratorConcept) {
+TEST(IteratorConcepts, ForwardIteratorConcept) {
     static int shared;
 
-    struct Valid {
-        using value_type = int;
-        using iterator_category = mystd::forward_iterator_tag;
-
+    struct Valid : mystd::iterator<mystd::forward_iterator_tag, int> {
         Valid &operator++() { return *this; }
         Valid operator++(int) { return *this; }
 
@@ -264,10 +202,7 @@ TEST(Iterator, ForwardIteratorConcept) {
     };
     EXPECT_TRUE(mystd::forward_iterator<Valid>);
 
-    struct NotInputIterator {
-        using value_type = int;
-        using iterator_category = mystd::forward_iterator_tag;
-
+    struct NotInputIterator : mystd::iterator<mystd::forward_iterator_tag, int> {
         NotInputIterator &operator++() { return *this; }
         NotInputIterator operator++(int) { return *this; }
 
@@ -279,10 +214,7 @@ TEST(Iterator, ForwardIteratorConcept) {
     EXPECT_TRUE(mystd::incrementable<NotInputIterator>);
     EXPECT_FALSE(mystd::forward_iterator<NotInputIterator>);
 
-    struct NotIncrementable {
-        using value_type = int;
-        using iterator_category = mystd::forward_iterator_tag;
-
+    struct NotIncrementable : mystd::iterator<mystd::forward_iterator_tag, int> {
         NotIncrementable &operator++() { return *this; }
         // Pre-increment must return a copy of I.
         NotIncrementable &operator++(int) { return *this; }
@@ -295,13 +227,10 @@ TEST(Iterator, ForwardIteratorConcept) {
     EXPECT_FALSE(mystd::forward_iterator<NotIncrementable>);
 }
 
-TEST(Iterator, BidirectionalIteratorConcept) {
+TEST(IteratorConcepts, BidirectionalIteratorConcept) {
     static int shared;
 
-    struct Valid {
-        using value_type = int;
-        using iterator_category = mystd::bidirectional_iterator_tag;
-
+    struct Valid : mystd::iterator<mystd::bidirectional_iterator_tag, int> {
         Valid &operator++() { return *this; }
         Valid operator++(int) { return *this; }
 
@@ -313,10 +242,7 @@ TEST(Iterator, BidirectionalIteratorConcept) {
     };
     EXPECT_TRUE(mystd::bidirectional_iterator<Valid>);
 
-    struct NotForwardIterator {
-        using value_type = int;
-        using iterator_category = mystd::bidirectional_iterator_tag;
-
+    struct NotForwardIterator : mystd::iterator<mystd::bidirectional_iterator_tag, int> {
         // NotForwardIterator &operator++() { return *this; }
         // NotForwardIterator operator++(int) { return *this; }
 
@@ -329,10 +255,7 @@ TEST(Iterator, BidirectionalIteratorConcept) {
     EXPECT_FALSE(mystd::forward_iterator<NotForwardIterator>);
     EXPECT_FALSE(mystd::bidirectional_iterator<NotForwardIterator>);
 
-    struct NotDecrementable {
-        using value_type = int;
-        using iterator_category = mystd::bidirectional_iterator_tag;
-
+    struct NotDecrementable : mystd::iterator<mystd::bidirectional_iterator_tag, int> {
         NotDecrementable &operator++() { return *this; }
         NotDecrementable operator++(int) { return *this; }
 
@@ -346,16 +269,10 @@ TEST(Iterator, BidirectionalIteratorConcept) {
     EXPECT_FALSE(mystd::bidirectional_iterator<NotDecrementable>);
 }
 
-TEST(Iterator, RandomAccessIteratorConcept) {
+TEST(IteratorConcepts, RandomAccessIteratorConcept) {
     static int shared;
 
-    struct Valid {
-        using difference_type = std::ptrdiff_t;
-        using value_type = int;
-        using pointer = int *;
-        using reference = int &;
-        using iterator_category = mystd::random_access_iterator_tag;
-
+    struct Valid : mystd::iterator<mystd::random_access_iterator_tag, int> {
         Valid &operator++() { return *this; }
         Valid operator++(int) { return *this; }
 
@@ -382,13 +299,7 @@ TEST(Iterator, RandomAccessIteratorConcept) {
     };
     EXPECT_TRUE(mystd::random_access_iterator<Valid>);
 
-    struct NotBidirectional {
-        using difference_type = std::ptrdiff_t;
-        using value_type = int;
-        using pointer = int *;
-        using reference = int &;
-        using iterator_category = mystd::random_access_iterator_tag;
-
+    struct NotBidirectional : mystd::iterator<mystd::random_access_iterator_tag, int> {
         NotBidirectional &operator++() { return *this; }
         NotBidirectional operator++(int) { return *this; }
 
@@ -416,13 +327,7 @@ TEST(Iterator, RandomAccessIteratorConcept) {
     EXPECT_FALSE(mystd::bidirectional_iterator<NotBidirectional>);
     EXPECT_FALSE(mystd::random_access_iterator<NotBidirectional>);
 
-    struct NotTotallyOrdered {
-        using difference_type = std::ptrdiff_t;
-        using value_type = int;
-        using pointer = int *;
-        using reference = int &;
-        using iterator_category = mystd::random_access_iterator_tag;
-
+    struct NotTotallyOrdered : mystd::iterator<mystd::random_access_iterator_tag, int> {
         NotTotallyOrdered &operator++() { return *this; }
         NotTotallyOrdered operator++(int) { return *this; }
 
@@ -451,13 +356,7 @@ TEST(Iterator, RandomAccessIteratorConcept) {
     EXPECT_FALSE(std::totally_ordered<NotTotallyOrdered>);
     EXPECT_FALSE(mystd::random_access_iterator<NotTotallyOrdered>);
 
-    struct NotDifferenceable {
-        using difference_type = std::ptrdiff_t;
-        using value_type = int;
-        using pointer = int *;
-        using reference = int &;
-        using iterator_category = mystd::random_access_iterator_tag;
-
+    struct NotDifferenceable : mystd::iterator<mystd::random_access_iterator_tag, int> {
         NotDifferenceable &operator++() { return *this; }
         NotDifferenceable operator++(int) { return *this; }
 
@@ -487,13 +386,7 @@ TEST(Iterator, RandomAccessIteratorConcept) {
     EXPECT_FALSE((std::sized_sentinel_for<NotDifferenceable, NotDifferenceable>));
     EXPECT_FALSE(mystd::random_access_iterator<NotDifferenceable>);
 
-    struct MissingNumericOverload {
-        using difference_type = std::ptrdiff_t;
-        using value_type = int;
-        using pointer = int *;
-        using reference = int &;
-        using iterator_category = mystd::random_access_iterator_tag;
-
+    struct MissingNumericOverload : mystd::iterator<mystd::random_access_iterator_tag, int> {
         MissingNumericOverload &operator++() { return *this; }
         MissingNumericOverload operator++(int) { return *this; }
 
@@ -522,113 +415,4 @@ TEST(Iterator, RandomAccessIteratorConcept) {
     EXPECT_TRUE(std::totally_ordered<MissingNumericOverload>);
     EXPECT_TRUE((std::sized_sentinel_for<MissingNumericOverload, MissingNumericOverload>));
     EXPECT_FALSE(mystd::random_access_iterator<MissingNumericOverload>);
-}
-
-TEST(Iterator, ReverseIterator) {
-    int data[5] = {1, 2, 3, 4, 5};
-
-    // Constructors
-    mystd::reverse_iterator<int *> rit(data + 5);
-    EXPECT_EQ(rit.base(), data + 5);
-
-    mystd::reverse_iterator<int *> default_rit;
-    EXPECT_EQ(default_rit.base(), (int *){});
-
-    mystd::reverse_iterator<const int *> const_rit(rit);
-    EXPECT_EQ(const_rit.base(), rit.base());
-
-    // operator->
-    struct Wrapper {
-        int v;
-    };
-    Wrapper structs[3] = {{10}, {20}, {30}};
-    mystd::reverse_iterator<Wrapper *> struct_rit(structs + 3);
-    EXPECT_EQ(struct_rit->v, 30);
-
-    // operator++
-    mystd::reverse_iterator pre_inc(data + 5);
-    auto &pre_inc_ref = ++pre_inc;
-    EXPECT_EQ(*pre_inc, 4);
-    EXPECT_EQ(&pre_inc_ref, &pre_inc);
-
-    // operator--
-    mystd::reverse_iterator pre_dec(data + 4);
-    auto &pre_dec_ref = --pre_dec;
-    EXPECT_EQ(*pre_dec, 5);
-    EXPECT_EQ(&pre_dec_ref, &pre_dec);
-
-    // operator++(int)
-    mystd::reverse_iterator post_inc(data + 5);
-    auto post_inc_old = post_inc++;
-    EXPECT_EQ(*post_inc, 4);
-    EXPECT_EQ(*post_inc_old, 5);
-
-    // operator--(int)
-    mystd::reverse_iterator post_dec(data + 4);
-    auto post_dec_old = post_dec--;
-    EXPECT_EQ(*post_dec, 5);
-    EXPECT_EQ(*post_dec_old, 4);
-
-    // operator+ / operator-
-    mystd::reverse_iterator arith_rit(data + 5);
-
-    auto plus_result = arith_rit + 4;
-    EXPECT_EQ(*plus_result, 1);
-    EXPECT_EQ(*arith_rit, 5);
-
-    auto commutative_result = 4 + arith_rit;
-    EXPECT_EQ(*commutative_result, 1);
-    EXPECT_EQ(*arith_rit, 5);
-
-    plus_result = plus_result - 4;
-    EXPECT_EQ(*plus_result, 5);
-    EXPECT_EQ(*arith_rit, 5);
-
-    // operator- non-member difference
-    mystd::reverse_iterator diff_left(data + 5);
-    mystd::reverse_iterator diff_right(data);
-    EXPECT_EQ(diff_left - diff_right, -5);
-    diff_left++;
-    EXPECT_EQ(diff_right - diff_left, 4);
-
-    // operator+=
-    mystd::reverse_iterator plus_eq(data + 5);
-    EXPECT_EQ(&(plus_eq += 3), &plus_eq);
-    EXPECT_EQ(*plus_eq, 2);
-
-    // operator-=
-    mystd::reverse_iterator minus_eq(data + 2);
-    EXPECT_EQ(&(minus_eq -= 3), &minus_eq);
-    EXPECT_EQ(*minus_eq, 5);
-
-    // comparison
-    mystd::reverse_iterator high(data);
-    mystd::reverse_iterator mid(data + 3);
-    mystd::reverse_iterator low(data + 5);
-
-    EXPECT_LT(low, mid);
-    EXPECT_LE(mid, high);
-
-    EXPECT_GT(high, mid);
-    EXPECT_GE(mid, low);
-
-    EXPECT_TRUE(low == low);
-    EXPECT_FALSE(low == mid);
-
-    EXPECT_FALSE(low != low);
-    EXPECT_TRUE(low != mid);
-}
-
-TEST(Iterator, FreeFunctions) {
-    std::vector<int> container = {1, 2, 3};
-    (void)empty(container);
-    (void)data(container);
-
-    std::vector<int> const_container = {1, 2, 3};
-    (void)empty(const_container);
-    (void)data(const_container);
-
-    mystd::initializer_list<int> il = {1, 2, 3};
-    (void)empty(il);
-    (void)data(il);
 }
