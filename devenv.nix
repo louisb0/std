@@ -16,6 +16,10 @@
       cmake -B build -S .
     '';
 
+    clean.exec = ''
+      rm -rf build/ .cache/
+    '';
+
     rt.exec = ''
       cmake --build build --target tests && {
         if [ -n "$1" ]; then

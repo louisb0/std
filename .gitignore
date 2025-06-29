@@ -41,3 +41,5 @@ devenv.local.nix
 # CMake
 build/
 .cache/
+.clangd
+compile_commands.json
