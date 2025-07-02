@@ -18,6 +18,21 @@ TEST(Memory, UninitializedCopyString) {
     }
 }
 
+TEST(Memory, UninitializedMoveString) {
+    constexpr size_t count = 3;
+    alignas(std::string) std::byte buffer[sizeof(std::string) * count];
+    std::string src[count] = {"hello", "world", "test"};
+    std::string *dest = reinterpret_cast<std::string *>(buffer);
+
+    std::string expected[count] = {"hello", "world", "test"};
+    auto result = mystd::uninitialized_move(src, src + count, dest);
+
+    EXPECT_EQ(result, dest + count);
+    for (size_t i = 0; i < count; ++i) {
+        EXPECT_EQ(dest[i], expected[i]);
+    }
+}
+
 TEST(Memory, UninitializedDefaultConstruct) {
     constexpr size_t count = 3;
     alignas(std::string) std::byte buffer[sizeof(std::string) * count];
@@ -85,6 +100,51 @@ TEST(Memory, UninitializedCopyExceptionSafety) {
 
     EXPECT_THROW({ mystd::uninitialized_copy(src, src + count, dest); }, std::runtime_error);
     EXPECT_EQ(CopyCounter::get_count(), 0);
+}
+
+class MoveCounter {
+public:
+    MoveCounter() = default;
+
+    MoveCounter(const MoveCounter &) {
+        if (move_count + 1 == failure_point) {
+            throw std::runtime_error("Move failed at designated point");
+        }
+
+        move_count++;
+    }
+
+    ~MoveCounter() {
+        if (move_count > 0) {
+            --move_count;
+        }
+    }
+
+    static void reset(size_t fail_at = SIZE_MAX) {
+        move_count = 0;
+        failure_point = fail_at;
+    }
+
+    static size_t get_count() { return move_count; }
+
+private:
+    static size_t move_count;
+    static size_t failure_point;
+};
+
+size_t MoveCounter::move_count = 0;
+size_t MoveCounter::failure_point = SIZE_MAX;
+
+TEST(Memory, UninitializedMoveExceptionSafety) {
+    constexpr size_t count = 5;
+    alignas(MoveCounter) std::byte buffer[sizeof(MoveCounter) * count];
+    MoveCounter src[count];
+    MoveCounter *dest = reinterpret_cast<MoveCounter *>(buffer);
+
+    MoveCounter::reset(3);
+
+    EXPECT_THROW({ mystd::uninitialized_move(src, src + count, dest); }, std::runtime_error);
+    EXPECT_EQ(MoveCounter::get_count(), 0);
 }
 
 class ConstructCounter {

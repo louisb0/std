@@ -27,6 +27,20 @@ template <input_iterator I, forward_iterator O> O uninitialized_copy(I first, I 
     }
 }
 
+template <input_iterator I, forward_iterator O> O uninitialized_move(I first, I last, O result) {
+    using T = typename iterator_traits<I>::value_type;
+
+    O current = result;
+    try {
+        for (; first != last; ++first, ++current)
+            ::new (static_cast<void *>(std::addressof(*current))) T(std::move(*first));
+        return current;
+    } catch (...) {
+        destroy(result, current);
+        throw;
+    }
+}
+
 template <forward_iterator I> void uninitialized_default_construct(I first, I last) {
     using T = typename iterator_traits<I>::value_type;
 
