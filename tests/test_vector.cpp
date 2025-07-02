@@ -1,6 +1,7 @@
 #include "vector.hpp"
 
 #include <gtest/gtest.h>
+
 #include <stdexcept>
 
 TEST(Vector, DefaultConstructor) {
@@ -63,7 +64,7 @@ TEST(Vector, CopyConstructor) {
 TEST(Vector, MoveConstructor) {
     mystd::vector<int> first = {1, 2, 3};
     int *store = first.data();
-    mystd::vector<int> second(std::move(first));
+    mystd::vector<int> second(mystd::move(first));
 
     EXPECT_EQ(first.data(), nullptr);
     EXPECT_EQ(first.size(), 0);
@@ -130,14 +131,87 @@ TEST(Vector, Iterators) {
     }
 }
 
-// TEST(Vector, Resize) {
-//     mystd::vector<int> x = {1, 2, 3};
-//
-//     x.reserve(10);
-//     EXPECT_EQ(x[0], 1);
-//     EXPECT_EQ(x[1], 2);
-//     EXPECT_EQ(x[2], 3);
-//
-//     EXPECT_EQ(x.size(), 3);
-//     EXPECT_EQ(x.capacity(), 10);
-// }
+TEST(Vector, Reserve) {
+    mystd::vector<int> pod_vec = {1, 2, 3};
+
+    // POD happy-path
+    pod_vec.reserve(10);
+    EXPECT_EQ(pod_vec[0], 1);
+    EXPECT_EQ(pod_vec[1], 2);
+    EXPECT_EQ(pod_vec[2], 3);
+    EXPECT_EQ(pod_vec.size(), 3);
+    EXPECT_EQ(pod_vec.capacity(), 10);
+
+    // Redundant reserve
+    int *prev_pod_data = pod_vec.data();
+    pod_vec.reserve(5);
+    EXPECT_EQ(pod_vec.data(), prev_pod_data);
+    EXPECT_EQ(pod_vec.size(), 3);
+    EXPECT_EQ(pod_vec.capacity(), 10);
+
+    // Moves when noexcept
+    struct MoveNoThrow {
+        bool was_move_constructed = false;
+        MoveNoThrow() = default;
+        MoveNoThrow(MoveNoThrow &&other) noexcept : was_move_constructed(true) {}
+        MoveNoThrow(const MoveNoThrow &other) : was_move_constructed(false) {}
+    };
+    mystd::vector<MoveNoThrow> move_vec(3);
+    move_vec.reserve(10);
+    for (const auto &elem : move_vec) {
+        EXPECT_TRUE(elem.was_move_constructed);
+    }
+
+    // Copy when unable to safely move
+    struct MoveThrows {
+        bool was_copy_constructed = false;
+        MoveThrows() = default;
+        MoveThrows(MoveThrows &&other) : was_copy_constructed(false) {}
+        MoveThrows(const MoveThrows &other) : was_copy_constructed(true) {}
+    };
+    mystd::vector<MoveThrows> copy_vec(3);
+    copy_vec.reserve(10);
+    for (const auto &elem : copy_vec) {
+        EXPECT_TRUE(elem.was_copy_constructed);
+    }
+}
+
+TEST(Vector, Clear) {
+    mystd::vector<int> vec = {1, 2, 3};
+    vec.clear();
+
+    EXPECT_EQ(vec.size(), 0);
+    EXPECT_EQ(vec.capacity(), 3);
+    EXPECT_TRUE(vec.empty());
+}
+
+TEST(Vector, PopBack) {
+    mystd::vector<int> vec = {1, 2, 3};
+    vec.pop_back();
+
+    EXPECT_EQ(vec.size(), 2);
+    EXPECT_EQ(vec.capacity(), 3);
+}
+
+TEST(Vector, EmplaceAndPushBack) {
+    struct ConstructTracker {
+        bool defaulted = false;
+        bool copied = false;
+        bool moved = false;
+
+        ConstructTracker() : defaulted(true) {}
+        ConstructTracker(const ConstructTracker &other) : copied(true) {}
+        ConstructTracker(ConstructTracker &&other) : moved(true) {}
+    };
+    mystd::vector<ConstructTracker> vec;
+
+    auto &tracker = vec.emplace_back();
+    EXPECT_TRUE(tracker.defaulted);
+
+    vec.push_back(ConstructTracker{});
+    EXPECT_TRUE(vec.back().moved);
+
+    ConstructTracker lval{};
+    vec.push_back(lval);
+    EXPECT_TRUE(vec.back().copied);
+}

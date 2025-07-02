@@ -135,8 +135,64 @@ public:
     size_type size() const noexcept { return _finish - _start; }
     size_type max_size() const noexcept { return std::numeric_limits<difference_type>::max(); }
     size_type capacity() const noexcept { return _end_of_storage - _start; }
-    // reserve()
+
+    void reserve(size_type new_cap) {
+        if (new_cap <= capacity()) {
+            return;
+        }
+
+        if (new_cap > max_size()) {
+            throw std::length_error("mystd::vector::reserve was called with too large a capacity.");
+        }
+
+        T *new_start = static_cast<T *>(operator new(sizeof(T) * new_cap));
+        T *new_finish = new_start;
+
+        try {
+            if constexpr (std::is_nothrow_move_constructible_v<T> ||
+                          !std::is_copy_constructible_v<T>) {
+                new_finish = mystd::uninitialized_move(begin(), end(), new_start);
+            } else {
+                new_finish = mystd::uninitialized_copy(begin(), end(), new_start);
+            }
+
+            mystd::destroy(begin(), end());
+            operator delete(_start);
+
+            _start = new_start;
+            _finish = new_finish;
+            _end_of_storage = new_start + new_cap;
+        } catch (...) {
+            operator delete(new_start);
+            throw;
+        }
+    }
     // shrink_to_fit()
+
+    // Modifiers.
+    void clear() {
+        mystd::destroy(begin(), end());
+        _finish = _start;
+    }
+
+    // insert()
+    // emplace()
+    // erase()
+
+    template <typename... Args> reference emplace_back(Args &&...args) {
+        if (size() == capacity()) {
+            reserve(size() == 0 ? 1 : 2 * size());
+        }
+
+        new (_finish) T(std::forward<Args>(args)...);
+        return *(_finish++);
+    }
+    void push_back(const T &value) { emplace_back(value); }
+    void push_back(T &&value) { emplace_back(std::move(value)); }
+
+    void pop_back() { (--_finish)->~T(); }
+
+    // resize()
 };
 
 } // namespace mystd
