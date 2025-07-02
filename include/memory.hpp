@@ -33,7 +33,7 @@ template <input_iterator I, forward_iterator O> O uninitialized_move(I first, I 
     O current = result;
     try {
         for (; first != last; ++first, ++current)
-            ::new (static_cast<void *>(std::addressof(*current))) T(std::move(*first));
+            ::new (static_cast<void *>(std::addressof(*current))) T(mystd::move(*first));
         return current;
     } catch (...) {
         destroy(result, current);

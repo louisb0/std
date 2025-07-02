@@ -37,3 +37,9 @@ TEST(TypeTraits, IsReferenceable) {
     EXPECT_TRUE(mystd::is_referenceable_v<const int &>);
     EXPECT_TRUE(mystd::is_referenceable_v<int &&>);
 }
+
+TEST(TypeTraits, RemoveReference) {
+    EXPECT_TRUE((mystd::is_same_v<int, mystd::remove_reference_t<int>>));
+    EXPECT_TRUE((mystd::is_same_v<int, mystd::remove_reference_t<int &>>));
+    EXPECT_TRUE((mystd::is_same_v<int, mystd::remove_reference_t<int &&>>));
+}

@@ -2,6 +2,7 @@
 
 #include "bits/iterator_base_types.hpp"
 #include "type_traits.hpp"
+#include "utility.hpp"
 
 #include <concepts>
 #include <iterator>
@@ -57,8 +58,7 @@ concept output_iterator =
     input_or_output_iterator<I> &&
     std::indirectly_writable<I, T> &&
     requires (I i, T&& t) {
-        // TODO: mystd::forward
-        *i++ = std::forward<T>(t);
+        *i++ = mystd::forward<T>(t);
     };
 
 /**
