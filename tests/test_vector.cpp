@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <stdexcept>
+#include <string>
 
 TEST(Vector, DefaultConstructor) {
     mystd::vector<int> defaulted;
@@ -194,26 +195,29 @@ TEST(Vector, PopBack) {
 }
 
 TEST(Vector, EmplaceAndPushBack) {
-    struct ConstructTracker {
-        bool defaulted = false;
-        bool copied = false;
-        bool moved = false;
+    static constexpr uint8_t defaulted = 0b00000001;
+    static constexpr uint8_t copied = 0b00000010;
+    static constexpr uint8_t moved = 0b00000100;
 
-        ConstructTracker() : defaulted(true) {}
-        ConstructTracker(const ConstructTracker &other) : copied(true) {}
-        ConstructTracker(ConstructTracker &&other) : moved(true) {}
+    struct ConstructTracker {
+        uint8_t flags = 0;
+
+        ConstructTracker() { flags |= defaulted; }
+        ConstructTracker(const ConstructTracker &other) : flags(other.flags) { flags |= copied; }
+        ConstructTracker(ConstructTracker &&other) : flags(other.flags) { flags |= moved; }
     };
+
     mystd::vector<ConstructTracker> vec;
 
     auto &tracker = vec.emplace_back();
-    EXPECT_TRUE(tracker.defaulted);
+    EXPECT_EQ(tracker.flags, defaulted);
 
     vec.push_back(ConstructTracker{});
-    EXPECT_TRUE(vec.back().moved);
+    EXPECT_EQ(vec.back().flags, defaulted | moved);
 
     ConstructTracker lval{};
     vec.push_back(lval);
-    EXPECT_TRUE(vec.back().copied);
+    EXPECT_EQ(vec.back().flags, defaulted | copied);
 }
 
 TEST(Vector, ErasePoint) {

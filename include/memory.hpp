@@ -51,7 +51,6 @@ template <input_iterator I, forward_iterator O> O uninitialized_move(I first, I 
 
 template <forward_iterator I> void uninitialized_default_construct(I first, I last) {
     using T = typename iterator_traits<I>::value_type;
-    static_assert(std::is_default_constructible_v<T>);
 
     I current = first;
     try {

@@ -8,10 +8,6 @@
 namespace mystd {
 
 template <typename T> class vector {
-    static_assert(std::is_destructible_v<T>);
-    static_assert(std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>);
-
-private:
     T *_start{};
     T *_finish{};
     T *_end_of_storage{};
