@@ -273,3 +273,23 @@ TEST(Vector, EraseRange) {
     EXPECT_EQ(vec.size(), 0);
     EXPECT_EQ(vec.capacity(), 4);
 }
+
+TEST(Vector, Emplace) {
+    mystd::vector<std::string> vec;
+
+    auto it = vec.emplace(vec.begin(), "a");
+    EXPECT_EQ(*it, "a");
+    EXPECT_EQ(vec.size(), 1);
+
+    it = vec.emplace(vec.end(), "c");
+    EXPECT_EQ(*it, "c");
+    EXPECT_EQ(vec.size(), 2);
+
+    it = vec.emplace(vec.begin() + 1, "b");
+    EXPECT_EQ(*it, "b");
+    EXPECT_EQ(vec.size(), 3);
+
+    EXPECT_EQ(vec[0], "a");
+    EXPECT_EQ(vec[1], "b");
+    EXPECT_EQ(vec[2], "c");
+}

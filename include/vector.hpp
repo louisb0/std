@@ -183,6 +183,21 @@ public:
     // insert()
     // emplace()
 
+    template <typename... Args> iterator emplace(const_iterator cpos, Args &&...args) {
+        difference_type offset = mystd::distance(cbegin(), cpos);
+        if (size() == capacity()) {
+            reserve(size() == 0 ? 1 : 2 * size());
+        }
+
+        iterator pos = begin() + offset;
+
+        new (end()) T(mystd::forward<Args>(args)...);
+        std::rotate(pos, end(), end() + 1); // NOTE: Consider implementing.
+
+        ++_finish;
+        return pos;
+    }
+
     iterator erase(const_iterator cpos) {
         iterator pos = begin() + (cpos - cbegin());
 
