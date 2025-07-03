@@ -177,7 +177,39 @@ public:
 
     // insert()
     // emplace()
-    // erase()
+
+    iterator erase(const_iterator pos) {
+        static_assert(std::is_move_assignable_v<T>);
+
+        iterator mutable_pos = begin() + (pos - cbegin());
+
+        for (auto it = mutable_pos + 1; it != end(); ++it) {
+            *(it - 1) = std::move(*it);
+        }
+        (end() - 1)->~T();
+
+        --_finish;
+        return mutable_pos;
+    }
+
+    iterator erase(const_iterator first, const_iterator last) {
+        static_assert(std::is_move_assignable_v<T>);
+
+        iterator mutable_first = begin() + (first - cbegin());
+        iterator mutable_last = begin() + (last - cbegin());
+
+        iterator dest = mutable_first;
+        for (auto src = mutable_last; src != end(); ++src, ++dest) {
+            *dest = std::move(*src);
+        }
+
+        for (auto it = dest; it != end(); ++it) {
+            it->~T();
+        }
+
+        _finish -= (last - first);
+        return mutable_first;
+    }
 
     template <typename... Args> reference emplace_back(Args &&...args) {
         if (size() == capacity()) {
@@ -187,6 +219,7 @@ public:
         new (_finish) T(std::forward<Args>(args)...);
         return *(_finish++);
     }
+
     void push_back(const T &value) { emplace_back(value); }
     void push_back(T &&value) { emplace_back(std::move(value)); }
 

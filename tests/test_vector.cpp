@@ -215,3 +215,61 @@ TEST(Vector, EmplaceAndPushBack) {
     vec.push_back(lval);
     EXPECT_TRUE(vec.back().copied);
 }
+
+TEST(Vector, ErasePoint) {
+    mystd::vector<int> vec = {1, 2, 3, 4};
+
+    // Middle
+    auto it = vec.erase(vec.begin() + 1); // {1, 3, 4}
+    EXPECT_EQ(*it, 3);
+
+    EXPECT_EQ(vec[0], 1);
+    EXPECT_EQ(vec[1], 3);
+    EXPECT_EQ(vec[2], 4);
+    EXPECT_EQ(vec.size(), 3);
+    EXPECT_EQ(vec.capacity(), 4);
+
+    // Start
+    it = vec.erase(vec.begin()); // {3, 4}
+    EXPECT_EQ(*it, 3);
+
+    EXPECT_EQ(vec[0], 3);
+    EXPECT_EQ(vec[1], 4);
+    EXPECT_EQ(vec.size(), 2);
+    EXPECT_EQ(vec.capacity(), 4);
+
+    // End
+    it = vec.erase(vec.end() - 1); // {3}
+    EXPECT_EQ(it, vec.end());
+
+    EXPECT_EQ(vec[0], 3);
+    EXPECT_EQ(vec.size(), 1);
+    EXPECT_EQ(vec.capacity(), 4);
+}
+
+TEST(Vector, EraseRange) {
+    mystd::vector<int> vec = {1, 2, 3, 4};
+
+    // Subset
+    auto it = vec.erase(vec.begin() + 1, vec.end() - 1); // {1, 4}
+    EXPECT_EQ(*it, 4);
+
+    EXPECT_EQ(vec[0], 1);
+    EXPECT_EQ(vec[1], 4);
+    EXPECT_EQ(vec.size(), 2);
+    EXPECT_EQ(vec.capacity(), 4);
+
+    // Full
+    it = vec.erase(vec.begin(), vec.end()); // {}
+    EXPECT_EQ(it, vec.end());
+
+    EXPECT_EQ(vec.size(), 0);
+    EXPECT_EQ(vec.capacity(), 4);
+
+    // Empty
+    it = vec.erase(vec.begin(), vec.end()); // {}
+    EXPECT_EQ(it, vec.end());
+
+    EXPECT_EQ(vec.size(), 0);
+    EXPECT_EQ(vec.capacity(), 4);
+}
