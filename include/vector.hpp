@@ -7,6 +7,9 @@
 namespace mystd {
 
 template <typename T> class vector {
+    static_assert(std::is_destructible_v<T>);
+    static_assert(std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>);
+
 private:
     T *_start{};
     T *_finish{};
@@ -102,13 +105,13 @@ public:
 
     reference at(size_type pos) {
         if (pos >= size()) {
-            throw std::out_of_range("mystd::vector::at was called with an index out of bounds.");
+            throw std::out_of_range("mystd::vector::at() was called with an index out of bounds.");
         }
         return *(_start + pos);
     }
     const_reference at(size_type pos) const {
         if (pos >= size()) {
-            throw std::out_of_range("mystd::vector::at was called with an index out of bounds.");
+            throw std::out_of_range("mystd::vector::at() was called with an index out of bounds.");
         }
         return *(_start + pos);
     }
@@ -142,7 +145,8 @@ public:
         }
 
         if (new_cap > max_size()) {
-            throw std::length_error("mystd::vector::reserve was called with too large a capacity.");
+            throw std::length_error(
+                "mystd::vector::reserve() was called with too large a capacity.");
         }
 
         T *new_start = static_cast<T *>(operator new(sizeof(T) * new_cap));
