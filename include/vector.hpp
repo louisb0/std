@@ -1,5 +1,6 @@
 #pragma once
 
+#include "algorithm.hpp"
 #include "initializer_list.hpp"
 #include "iterator.hpp"
 #include "memory.hpp"
@@ -182,37 +183,25 @@ public:
     // insert()
     // emplace()
 
-    iterator erase(const_iterator pos) {
-        static_assert(std::is_move_assignable_v<T>);
+    iterator erase(const_iterator cpos) {
+        iterator pos = begin() + (cpos - cbegin());
 
-        iterator mutable_pos = begin() + (pos - cbegin());
-
-        for (auto it = mutable_pos + 1; it != end(); ++it) {
-            *(it - 1) = std::move(*it);
-        }
+        mystd::move(pos + 1, end(), pos);
         (end() - 1)->~T();
 
         --_finish;
-        return mutable_pos;
+        return pos;
     }
 
-    iterator erase(const_iterator first, const_iterator last) {
-        static_assert(std::is_move_assignable_v<T>);
+    iterator erase(const_iterator cfirst, const_iterator clast) {
+        iterator first = begin() + (cfirst - cbegin());
+        iterator last = begin() + (clast - cbegin());
 
-        iterator mutable_first = begin() + (first - cbegin());
-        iterator mutable_last = begin() + (last - cbegin());
+        auto new_end = mystd::move(last, end(), first);
+        mystd::destroy(new_end, end());
 
-        iterator dest = mutable_first;
-        for (auto src = mutable_last; src != end(); ++src, ++dest) {
-            *dest = std::move(*src);
-        }
-
-        for (auto it = dest; it != end(); ++it) {
-            it->~T();
-        }
-
-        _finish -= (last - first);
-        return mutable_first;
+        _finish = new_end;
+        return first;
     }
 
     template <typename... Args> reference emplace_back(Args &&...args) {
