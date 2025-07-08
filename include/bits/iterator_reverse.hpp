@@ -88,6 +88,7 @@ public:
     }
 };
 
+// TODO: Use <=> instead.
 template <typename I1, typename I2>
 bool operator==(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs) {
     return lhs.base() == rhs.base();

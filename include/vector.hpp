@@ -1,7 +1,6 @@
 #pragma once
 
 #include "algorithm.hpp"
-#include "initializer_list.hpp"
 #include "iterator.hpp"
 #include "memory.hpp"
 
@@ -11,7 +10,6 @@ namespace mystd {
 
 /*
 
-- add swap, define in terms of swap
 - code review vector
     - consistent type alias usage
     - consistent pattern with exception safety - new fn?
@@ -56,7 +54,7 @@ public:
         }
     }
 
-    vector(size_type count, const T &value) {
+    vector(size_type count, const value_type &value) {
         _start = static_cast<T *>(operator new(sizeof(T) * count));
         _finish = _start;
         _end_of_storage = _start + count;
@@ -87,8 +85,7 @@ public:
     }
 
     vector(const vector &other) : vector(other.begin(), other.end()) {};
-    vector(std::initializer_list<T> il) : vector(mystd::initializer_list<T>(il)) {}
-    vector(const mystd::initializer_list<T> &il) : vector(il.begin(), il.end()) {};
+    vector(std::initializer_list<T> il) : vector(il.begin(), il.end()) {};
 
     vector(vector &&other) noexcept { swap(other); }
 
@@ -262,7 +259,7 @@ public:
         return pos;
     }
 
-    iterator insert(const_iterator cpos, mystd::initializer_list<T> il) {
+    iterator insert(const_iterator cpos, std::initializer_list<T> il) {
         return insert(cpos, il.begin(), il.end());
     }
 
