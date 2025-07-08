@@ -4,6 +4,7 @@
 #include "initializer_list.hpp"
 #include "iterator.hpp"
 #include "memory.hpp"
+#include <algorithm>
 
 namespace mystd {
 
@@ -262,5 +263,26 @@ public:
 
     // resize()
 };
+
+template <class T> auto operator<=>(const vector<T> &lhs, const vector<T> &rhs) {
+    size_t min_size = std::min(lhs.size(), rhs.size());
+
+    for (size_t i = 0; i < min_size; i++) {
+        auto cmp = lhs[i] <=> rhs[i];
+        if (cmp != 0) {
+            return cmp;
+        }
+    }
+
+    return lhs.size() <=> rhs.size();
+}
+
+template <class T> bool operator==(const vector<T> &lhs, const vector<T> &rhs) {
+    if (lhs.size() != rhs.size()) {
+        return false;
+    }
+
+    return (lhs <=> rhs) == 0;
+}
 
 } // namespace mystd

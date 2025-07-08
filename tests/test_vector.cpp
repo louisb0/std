@@ -371,3 +371,22 @@ TEST(Vector, InsertIterators) {
     EXPECT_EQ(to[3], 4);
     EXPECT_EQ(to[4], 5);
 }
+
+TEST(Vector, Comparison) {
+    mystd::vector<int> vec1 = {1, 2, 3};
+    mystd::vector<int> vec2 = {1, 2, 3};
+    mystd::vector<int> vec3 = {1, 2, 4};
+    mystd::vector<int> vec4 = {1, 2};
+
+    EXPECT_TRUE(vec1 == vec2);
+    EXPECT_TRUE(vec1 != vec3);
+
+    EXPECT_TRUE(vec1 < vec3);
+    EXPECT_TRUE(vec3 > vec1);
+
+    EXPECT_TRUE(vec4 < vec3);
+    EXPECT_TRUE(vec3 > vec4);
+
+    EXPECT_TRUE(vec1 <= vec2);
+    EXPECT_TRUE(vec1 >= vec2);
+}
