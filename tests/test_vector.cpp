@@ -297,3 +297,77 @@ TEST(Vector, Emplace) {
     EXPECT_EQ(vec[1], "b");
     EXPECT_EQ(vec[2], "c");
 }
+
+TEST(Vector, InsertSingle) {
+    mystd::vector<int> vec;
+
+    auto it = vec.insert(vec.begin(), 1);
+    EXPECT_EQ(*it, 1);
+    EXPECT_EQ(vec.size(), 1);
+
+    it = vec.insert(vec.end(), 3);
+    EXPECT_EQ(*it, 3);
+    EXPECT_EQ(vec.size(), 2);
+
+    int to_move = 2;
+    it = vec.insert(vec.begin() + 1, std::move(2));
+    EXPECT_EQ(*it, 2);
+    EXPECT_EQ(vec.size(), 3);
+
+    EXPECT_EQ(vec[0], 1);
+    EXPECT_EQ(vec[1], 2);
+    EXPECT_EQ(vec[2], 3);
+}
+
+TEST(Vector, InsertCount) {
+    mystd::vector<int> vec;
+
+    auto it = vec.insert(vec.begin(), 2, 1);
+    EXPECT_EQ(*it, 1);
+    EXPECT_EQ(vec.size(), 2);
+
+    it = vec.insert(vec.end(), 2, 3);
+    EXPECT_EQ(*it, 3);
+    EXPECT_EQ(vec.size(), 4);
+
+    int to_move = 2;
+    it = vec.insert(vec.begin() + 2, 2, std::move(2));
+    EXPECT_EQ(*it, 2);
+    EXPECT_EQ(vec.size(), 6);
+
+    EXPECT_EQ(vec[0], 1);
+    EXPECT_EQ(vec[1], 1);
+    EXPECT_EQ(vec[2], 2);
+    EXPECT_EQ(vec[3], 2);
+    EXPECT_EQ(vec[4], 3);
+    EXPECT_EQ(vec[5], 3);
+}
+
+TEST(Vector, InsertIterators) {
+    mystd::vector<int> to;
+
+    mystd::vector<int> empty;
+    to.insert(to.begin(), empty.begin(), empty.end());
+    EXPECT_EQ(to.size(), 0);
+
+    mystd::vector<int> first = {1, 2};
+    auto it = to.insert(to.begin(), first.begin(), first.end());
+    EXPECT_EQ(*it, 1);
+    EXPECT_EQ(to.size(), 2);
+
+    mystd::vector<int> second = {4, 5};
+    it = to.insert(to.end(), second.begin(), second.end());
+    EXPECT_EQ(*it, 4);
+    EXPECT_EQ(to.size(), 4);
+
+    mystd::vector<int> third = {3};
+    it = to.insert(to.begin() + 2, third.begin(), third.end());
+    EXPECT_EQ(*it, 3);
+    EXPECT_EQ(to.size(), 5);
+
+    EXPECT_EQ(to[0], 1);
+    EXPECT_EQ(to[1], 2);
+    EXPECT_EQ(to[2], 3);
+    EXPECT_EQ(to[3], 4);
+    EXPECT_EQ(to[4], 5);
+}

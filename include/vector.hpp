@@ -87,7 +87,7 @@ public:
         operator delete(_start);
     }
 
-    // Element access.
+    // Element access
     reference operator[](difference_type pos) noexcept { return *(_start + pos); }
     const_reference operator[](difference_type pos) const noexcept { return *(_start + pos); }
 
@@ -130,7 +130,7 @@ public:
     const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
     const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
 
-    // Capacity.
+    // Capacity
     bool empty() const noexcept { return _start == _finish; }
     size_type size() const noexcept { return _finish - _start; }
     size_type max_size() const noexcept { return std::numeric_limits<difference_type>::max(); }
@@ -170,15 +170,7 @@ public:
     }
     // shrink_to_fit()
 
-    // Modifiers.
-    void clear() {
-        mystd::destroy(begin(), end());
-        _finish = _start;
-    }
-
-    // insert()
-    // emplace()
-
+    // Modifiers
     template <typename... Args> iterator emplace(const_iterator cpos, Args &&...args) {
         difference_type offset = mystd::distance(cbegin(), cpos);
         if (size() == capacity()) {
@@ -192,6 +184,49 @@ public:
 
         ++_finish;
         return pos;
+    }
+
+    template <typename... Args> reference emplace_back(Args &&...args) {
+        if (size() == capacity()) {
+            reserve(size() == 0 ? 1 : 2 * size());
+        }
+
+        new (_finish) T(std::forward<Args>(args)...);
+        return *(_finish++);
+    }
+
+    iterator insert(const_iterator cpos, const T &value) { return emplace(cpos, value); }
+    iterator insert(const_iterator cpos, T &&value) { return emplace(cpos, std::move(value)); }
+
+    iterator insert(const_iterator cpos, size_type count, const T &value) {
+        difference_type pos_offset = cpos - cbegin();
+        reserve(size() + count);
+
+        iterator pos = begin() + pos_offset;
+
+        mystd::uninitialized_fill(end(), end() + count, value);
+        std::rotate(pos, end(), end() + count);
+
+        _finish += count;
+        return pos;
+    }
+
+    template <input_iterator I> iterator insert(const_iterator cpos, I first, I last) {
+        size_type count = static_cast<size_type>(std::distance(first, last));
+        difference_type pos_offset = cpos - cbegin();
+        reserve(size() + count);
+
+        iterator pos = begin() + pos_offset;
+
+        mystd::uninitialized_copy(first, last, end());
+        std::rotate(pos, end(), end() + count);
+
+        _finish += count;
+        return pos;
+    }
+
+    iterator insert(const_iterator cpos, mystd::initializer_list<T> il) {
+        return insert(cpos, il.begin(), il.end());
     }
 
     iterator erase(const_iterator cpos) {
@@ -215,13 +250,9 @@ public:
         return first;
     }
 
-    template <typename... Args> reference emplace_back(Args &&...args) {
-        if (size() == capacity()) {
-            reserve(size() == 0 ? 1 : 2 * size());
-        }
-
-        new (_finish) T(std::forward<Args>(args)...);
-        return *(_finish++);
+    void clear() {
+        mystd::destroy(begin(), end());
+        _finish = _start;
     }
 
     void push_back(const T &value) { emplace_back(value); }
