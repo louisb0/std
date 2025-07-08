@@ -4,6 +4,7 @@
 #include "initializer_list.hpp"
 #include "iterator.hpp"
 #include "memory.hpp"
+
 #include <algorithm>
 
 namespace mystd {
@@ -169,9 +170,52 @@ public:
             throw;
         }
     }
-    // shrink_to_fit()
+
+    void shrink_to_fit() {
+        if (size() == capacity()) {
+            return;
+        }
+
+        T *new_start = static_cast<T *>(operator new(sizeof(T) * size()));
+        T *new_finish = new_start;
+
+        try {
+            if constexpr (std::is_nothrow_move_constructible_v<T> ||
+                          !std::is_copy_constructible_v<T>) {
+                new_finish = mystd::uninitialized_move(begin(), end(), new_start);
+            } else {
+                new_finish = mystd::uninitialized_copy(begin(), end(), new_start);
+            }
+
+            mystd::destroy(begin(), end());
+            operator delete(_start);
+
+            _start = new_start;
+            _finish = new_finish;
+            _end_of_storage = new_start + size();
+        } catch (...) {
+            operator delete(new_start);
+            throw;
+        }
+    }
 
     // Modifiers
+    void resize(size_type count, const value_type &value) {
+        iterator new_end = _start + count;
+
+        if (count < size()) {
+            mystd::destroy(new_end, end());
+        } else if (count > size()) {
+            reserve(count);
+
+            new_end = _start + count;
+            mystd::uninitialized_fill(end(), new_end, value);
+        }
+
+        _finish = new_end;
+    }
+    void resize(size_type count) { resize(count, T{}); }
+
     template <typename... Args> iterator emplace(const_iterator cpos, Args &&...args) {
         difference_type offset = mystd::distance(cbegin(), cpos);
         if (size() == capacity()) {
@@ -260,8 +304,6 @@ public:
     void push_back(T &&value) { emplace_back(std::move(value)); }
 
     void pop_back() { (--_finish)->~T(); }
-
-    // resize()
 };
 
 template <class T> auto operator<=>(const vector<T> &lhs, const vector<T> &rhs) {

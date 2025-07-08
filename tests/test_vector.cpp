@@ -390,3 +390,35 @@ TEST(Vector, Comparison) {
     EXPECT_TRUE(vec1 <= vec2);
     EXPECT_TRUE(vec1 >= vec2);
 }
+
+TEST(Vector, ShrinkToFit) {
+    mystd::vector<int> vec = {1, 2};
+    vec.push_back(3);
+
+    EXPECT_EQ(vec.capacity(), 4);
+    vec.shrink_to_fit();
+    EXPECT_EQ(vec.capacity(), 3);
+
+    EXPECT_EQ(vec.at(0), 1);
+    EXPECT_EQ(vec.at(1), 2);
+    EXPECT_EQ(vec.at(2), 3);
+}
+
+TEST(Vector, Resize) {
+    mystd::vector<int> v = {1, 2, 3};
+
+    v.resize(2);
+    EXPECT_EQ(v.size(), 2);
+    EXPECT_EQ(v[0], 1);
+    EXPECT_EQ(v[1], 2);
+
+    v.resize(5, 42);
+    EXPECT_EQ(v.size(), 5);
+    EXPECT_EQ(v[2], 42);
+    EXPECT_EQ(v[3], 42);
+    EXPECT_EQ(v[4], 42);
+
+    v.resize(5, 99);
+    EXPECT_EQ(v.size(), 5);
+    EXPECT_EQ(v[4], 42);
+}
