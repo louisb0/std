@@ -17,3 +17,12 @@ TEST(Utility, Move) {
     EXPECT_TRUE((mystd::is_same_v<int &&, decltype(mystd::move(lvalue))>));
     EXPECT_TRUE((mystd::is_same_v<int &&, decltype(mystd::move(32))>));
 }
+
+TEST(Utility, Swap) {
+    int a = 1;
+    int b = 2;
+
+    mystd::swap(a, b);
+    EXPECT_EQ(a, 2);
+    EXPECT_EQ(b, 1);
+}

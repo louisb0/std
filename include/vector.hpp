@@ -9,6 +9,19 @@
 
 namespace mystd {
 
+/*
+
+- add swap, define in terms of swap
+- code review vector
+    - consistent type alias usage
+    - consistent pattern with exception safety - new fn?
+    - function signatures
+    - ...
+- rework tests
+- add allocator
+
+*/
+
 template <typename T> class vector {
     T *_start{};
     T *_finish{};
@@ -77,12 +90,7 @@ public:
     vector(std::initializer_list<T> il) : vector(mystd::initializer_list<T>(il)) {}
     vector(const mystd::initializer_list<T> &il) : vector(il.begin(), il.end()) {};
 
-    vector(vector &&other) noexcept
-        : _start(other._start), _finish(other._finish), _end_of_storage(other._end_of_storage) {
-        other._start = nullptr;
-        other._finish = nullptr;
-        other._end_of_storage = nullptr;
-    }
+    vector(vector &&other) noexcept { swap(other); }
 
     ~vector() {
         mystd::destroy(begin(), end());
@@ -200,22 +208,6 @@ public:
     }
 
     // Modifiers
-    void resize(size_type count, const value_type &value) {
-        iterator new_end = _start + count;
-
-        if (count < size()) {
-            mystd::destroy(new_end, end());
-        } else if (count > size()) {
-            reserve(count);
-
-            new_end = _start + count;
-            mystd::uninitialized_fill(end(), new_end, value);
-        }
-
-        _finish = new_end;
-    }
-    void resize(size_type count) { resize(count, T{}); }
-
     template <typename... Args> iterator emplace(const_iterator cpos, Args &&...args) {
         difference_type offset = mystd::distance(cbegin(), cpos);
         if (size() == capacity()) {
@@ -304,6 +296,28 @@ public:
     void push_back(T &&value) { emplace_back(std::move(value)); }
 
     void pop_back() { (--_finish)->~T(); }
+
+    void resize(size_type count, const value_type &value) {
+        iterator new_end = _start + count;
+
+        if (count < size()) {
+            mystd::destroy(new_end, end());
+        } else if (count > size()) {
+            reserve(count);
+
+            new_end = _start + count;
+            mystd::uninitialized_fill(end(), new_end, value);
+        }
+
+        _finish = new_end;
+    }
+    void resize(size_type count) { resize(count, T{}); }
+
+    void swap(vector<T> &other) noexcept {
+        mystd::swap(_start, other._start);
+        mystd::swap(_finish, other._finish);
+        mystd::swap(_end_of_storage, other._end_of_storage);
+    }
 };
 
 template <class T> auto operator<=>(const vector<T> &lhs, const vector<T> &rhs) {
