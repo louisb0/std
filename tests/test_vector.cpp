@@ -27,58 +27,108 @@ TEST(Vector, CountConstructor) {
 }
 
 TEST(Vector, CountValueConstructor) {
-    mystd::vector<int> count(3, 3);
+    mystd::vector<int> vec(3, 3);
 
-    int *data = count.data();
+    int *data = vec.data();
     EXPECT_NE(data, nullptr);
     EXPECT_EQ(data[0], 3);
 
-    EXPECT_EQ(count.size(), 3);
-    EXPECT_EQ(count.capacity(), 3);
-    EXPECT_FALSE(count.empty());
+    EXPECT_EQ(vec.size(), 3);
+    EXPECT_EQ(vec.capacity(), 3);
+    EXPECT_FALSE(vec.empty());
 }
 
 TEST(Vector, InitializerListConstructor) {
-    mystd::vector<int> count = {1, 2, 3};
+    mystd::vector<int> vec = {1, 2, 3};
 
-    int *data = count.data();
+    int *data = vec.data();
     EXPECT_NE(data, nullptr);
     EXPECT_EQ(data[0], 1);
 
-    EXPECT_EQ(count.size(), 3);
-    EXPECT_EQ(count.capacity(), 3);
-    EXPECT_FALSE(count.empty());
+    EXPECT_EQ(vec.size(), 3);
+    EXPECT_EQ(vec.capacity(), 3);
+    EXPECT_FALSE(vec.empty());
 }
 
 TEST(Vector, CopyConstructor) {
-    mystd::vector<int> first = {1, 2, 3};
-    mystd::vector<int> copy(first);
+    mystd::vector<int> orig = {1, 2, 3};
+    mystd::vector<int> copy_constructed(orig);
 
-    EXPECT_NE(first.data(), copy.data());
-    EXPECT_EQ(first.data()[0], copy.data()[0]);
+    EXPECT_NE(orig.data(), copy_constructed.data());
+    EXPECT_EQ(orig.data()[0], copy_constructed.data()[0]);
 
-    EXPECT_EQ(first.size(), copy.size());
-    EXPECT_EQ(first.capacity(), copy.capacity());
-    EXPECT_EQ(first.empty(), copy.empty());
+    EXPECT_EQ(orig.size(), copy_constructed.size());
+    EXPECT_EQ(orig.capacity(), copy_constructed.capacity());
+    EXPECT_EQ(orig.empty(), copy_constructed.empty());
 }
 
 TEST(Vector, MoveConstructor) {
-    mystd::vector<int> first = {1, 2, 3};
-    int *data_location = first.data();
-    mystd::vector<int> second(mystd::move(first));
+    mystd::vector<int> orig = {1, 2, 3};
+    int *data_location = orig.data();
+    mystd::vector<int> move_constructed(mystd::move(orig));
 
-    EXPECT_EQ(first.data(), nullptr);
-    EXPECT_EQ(first.size(), 0);
-    EXPECT_EQ(first.capacity(), 0);
-    EXPECT_TRUE(first.empty());
+    EXPECT_EQ(orig.data(), nullptr);
+    EXPECT_EQ(orig.size(), 0);
+    EXPECT_EQ(orig.capacity(), 0);
+    EXPECT_TRUE(orig.empty());
 
-    EXPECT_EQ(second.data(), data_location);
-    EXPECT_EQ(second.size(), 3);
-    EXPECT_EQ(second.capacity(), 3);
-    EXPECT_FALSE(second.empty());
+    EXPECT_EQ(move_constructed.data(), data_location);
+    EXPECT_EQ(move_constructed.size(), 3);
+    EXPECT_EQ(move_constructed.capacity(), 3);
+    EXPECT_FALSE(move_constructed.empty());
 }
 
-// TODO: Assignment
+TEST(Vector, CopyAssignment) {
+    // Copy constructor proxy
+    {
+        mystd::vector<int> vec1 = {3};
+        mystd::vector<int> vec2 = {1, 2};
+        EXPECT_LT(vec1.capacity(), vec2.size());
+
+        vec1 = vec2;
+        EXPECT_EQ(vec1, vec2);
+    }
+
+    // Copy initialized + destroy
+    {
+        mystd::vector<int> vec1 = {1, 2};
+        mystd::vector<int> vec2 = {3};
+
+        EXPECT_LE(vec2.size(), vec1.capacity());
+        EXPECT_GT(vec1.size(), std::min(vec1.size(), vec2.size()));
+
+        vec1 = vec2;
+        EXPECT_EQ(vec1, vec2);
+    }
+
+    // Copy initialized + uninitialized
+    {
+        mystd::vector<int> vec1 = {3};
+        vec1.reserve(5);
+        mystd::vector<int> vec2 = {1, 2};
+
+        EXPECT_LE(vec2.size(), vec1.capacity());
+        EXPECT_GT(vec2.size(), std::min(vec1.size(), vec2.size()));
+
+        vec1 = vec2;
+        EXPECT_EQ(vec1, vec2);
+    }
+}
+
+TEST(Vector, MoveAssignment) {
+    mystd::vector<int> vec1 = {1, 2};
+    mystd::vector<int> vec2 = {3};
+
+    vec1 = std::move(vec2);
+    EXPECT_EQ(vec1, (mystd::vector<int>{3}));
+}
+
+TEST(Vector, InitializerListAssignment) {
+    mystd::vector<int> vec;
+
+    vec = {1, 2, 3};
+    EXPECT_EQ(vec, (mystd::vector<int>{1, 2, 3}));
+}
 
 TEST(Vector, Comparison) {
     mystd::vector<int> vec1 = {1, 2, 3};

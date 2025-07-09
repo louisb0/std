@@ -11,14 +11,9 @@ namespace mystd {
 
 /*
 
-- code review vector
-    - consistent type alias usage
-    - consistent pattern with exception safety - new fn?
-    - function signatures
-    - ...
 - operator=
-- rework tests
 - add allocator
+- project wide refactor (includes, consistent mystd::, etc.)
 
 */
 
@@ -86,14 +81,49 @@ public:
             throw;
         }
     }
-    vector(const vector &other) : vector(other.begin(), other.end()) {};
     vector(std::initializer_list<value_type> il) : vector(il.begin(), il.end()) {};
 
+    vector(const vector &other) : vector(other.begin(), other.end()) {};
     vector(vector &&other) noexcept { swap(other); }
 
     ~vector() noexcept {
         mystd::destroy(begin(), end());
         operator delete(_start);
+    }
+
+    vector &operator=(const vector &other) {
+        if (this == &other) {
+            return *this;
+        }
+
+        if (other.size() > capacity()) {
+            vector temp(other);
+            swap(temp);
+        } else {
+            // TODO: Implement copy().
+            size_t common_size = std::min(size(), other.size());
+            std::copy(other.begin(), other.begin() + common_size, begin());
+
+            if (size() > common_size) {
+                mystd::destroy(begin() + common_size, end());
+            } else if (other.size() > common_size) {
+                mystd::uninitialized_copy(other.begin() + common_size, other.end(), end());
+            }
+
+            _finish = _start + other.size();
+        }
+
+        return *this;
+    }
+
+    vector &operator=(std::initializer_list<value_type> il) noexcept {
+        *this = vector(il);
+        return *this;
+    }
+
+    vector &operator=(vector &&other) noexcept {
+        swap(other);
+        return *this;
     }
 
     // Access.
@@ -315,7 +345,7 @@ public:
     }
     void resize(size_type count) { resize(count, value_type{}); }
 
-    void swap(vector<value_type> &other) noexcept {
+    void swap(vector &other) noexcept {
         mystd::swap(_start, other._start);
         mystd::swap(_finish, other._finish);
         mystd::swap(_end_of_storage, other._end_of_storage);
