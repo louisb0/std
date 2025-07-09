@@ -5,6 +5,7 @@
 #include "memory.hpp"
 
 #include <algorithm>
+#include <compare>
 
 namespace mystd {
 
@@ -15,6 +16,7 @@ namespace mystd {
     - consistent pattern with exception safety - new fn?
     - function signatures
     - ...
+- operator=
 - rework tests
 - add allocator
 
@@ -38,10 +40,11 @@ public:
     using reverse_iterator = mystd::reverse_iterator<iterator>;
     using const_reverse_iterator = mystd::reverse_iterator<const_iterator>;
 
+    // Construction.
     vector() = default;
 
     explicit vector(size_type count) {
-        _start = static_cast<T *>(operator new(sizeof(T) * count));
+        _start = static_cast<value_type *>(operator new(sizeof(value_type) * count));
         _finish = _start;
         _end_of_storage = _start + count;
 
@@ -54,8 +57,8 @@ public:
         }
     }
 
-    vector(size_type count, const value_type &value) {
-        _start = static_cast<T *>(operator new(sizeof(T) * count));
+    vector(size_type count, const_reference value) {
+        _start = static_cast<value_type *>(operator new(sizeof(value_type) * count));
         _finish = _start;
         _end_of_storage = _start + count;
 
@@ -68,10 +71,10 @@ public:
         }
     }
 
-    template <input_iterator I> vector(I first, I last) {
-        typename iterator_traits<I>::difference_type count = mystd::distance(first, last);
+    template <mystd::input_iterator I> vector(I first, I last) {
+        typename mystd::iterator_traits<I>::difference_type count = mystd::distance(first, last);
 
-        _start = static_cast<T *>(operator new(sizeof(T) * count));
+        _start = static_cast<value_type *>(operator new(sizeof(value_type) * count));
         _finish = _start;
         _end_of_storage = _start + count;
 
@@ -83,20 +86,19 @@ public:
             throw;
         }
     }
-
     vector(const vector &other) : vector(other.begin(), other.end()) {};
-    vector(std::initializer_list<T> il) : vector(il.begin(), il.end()) {};
+    vector(std::initializer_list<value_type> il) : vector(il.begin(), il.end()) {};
 
     vector(vector &&other) noexcept { swap(other); }
 
-    ~vector() {
+    ~vector() noexcept {
         mystd::destroy(begin(), end());
         operator delete(_start);
     }
 
-    // Element access
-    reference operator[](difference_type pos) noexcept { return *(_start + pos); }
-    const_reference operator[](difference_type pos) const noexcept { return *(_start + pos); }
+    // Access.
+    reference operator[](size_type pos) noexcept { return *(_start + pos); }
+    const_reference operator[](size_type pos) const noexcept { return *(_start + pos); }
 
     reference front() noexcept { return *_start; }
     const_reference front() const noexcept { return *_start; }
@@ -137,7 +139,7 @@ public:
     const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
     const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
 
-    // Capacity
+    // Capacity.
     bool empty() const noexcept { return _start == _finish; }
     size_type size() const noexcept { return _finish - _start; }
     size_type max_size() const noexcept { return std::numeric_limits<difference_type>::max(); }
@@ -153,8 +155,9 @@ public:
                 "mystd::vector::reserve() was called with too large a capacity.");
         }
 
-        T *new_start = static_cast<T *>(operator new(sizeof(T) * new_cap));
-        T *new_finish = new_start;
+        value_type *new_start =
+            static_cast<value_type *>(operator new(sizeof(value_type) * new_cap));
+        value_type *new_finish = new_start;
 
         try {
             if constexpr (std::is_nothrow_move_constructible_v<T> ||
@@ -181,8 +184,9 @@ public:
             return;
         }
 
-        T *new_start = static_cast<T *>(operator new(sizeof(T) * size()));
-        T *new_finish = new_start;
+        value_type *new_start =
+            static_cast<value_type *>(operator new(sizeof(value_type) * size()));
+        value_type *new_finish = new_start;
 
         try {
             if constexpr (std::is_nothrow_move_constructible_v<T> ||
@@ -204,7 +208,7 @@ public:
         }
     }
 
-    // Modifiers
+    // Modifiers.
     template <typename... Args> iterator emplace(const_iterator cpos, Args &&...args) {
         difference_type offset = mystd::distance(cbegin(), cpos);
         if (size() == capacity()) {
@@ -213,7 +217,7 @@ public:
 
         iterator pos = begin() + offset;
 
-        new (end()) T(mystd::forward<Args>(args)...);
+        new (end()) value_type(mystd::forward<Args>(args)...);
         std::rotate(pos, end(), end() + 1); // NOTE: Consider implementing.
 
         ++_finish;
@@ -225,14 +229,20 @@ public:
             reserve(size() == 0 ? 1 : 2 * size());
         }
 
-        new (_finish) T(std::forward<Args>(args)...);
+        new (_finish) value_type(mystd::forward<Args>(args)...);
         return *(_finish++);
     }
 
-    iterator insert(const_iterator cpos, const T &value) { return emplace(cpos, value); }
-    iterator insert(const_iterator cpos, T &&value) { return emplace(cpos, std::move(value)); }
+    void push_back(const_reference value) { emplace_back(value); }
+    void push_back(value_type &&value) { emplace_back(std::move(value)); }
+    void pop_back() noexcept { (--_finish)->~value_type(); }
 
-    iterator insert(const_iterator cpos, size_type count, const T &value) {
+    iterator insert(const_iterator cpos, const_reference value) { return emplace(cpos, value); }
+    iterator insert(const_iterator cpos, value_type &&value) {
+        return emplace(cpos, std::move(value));
+    }
+
+    iterator insert(const_iterator cpos, size_type count, const_reference value) {
         difference_type pos_offset = cpos - cbegin();
         reserve(size() + count);
 
@@ -245,7 +255,7 @@ public:
         return pos;
     }
 
-    template <input_iterator I> iterator insert(const_iterator cpos, I first, I last) {
+    template <mystd::input_iterator I> iterator insert(const_iterator cpos, I first, I last) {
         size_type count = static_cast<size_type>(std::distance(first, last));
         difference_type pos_offset = cpos - cbegin();
         reserve(size() + count);
@@ -259,7 +269,7 @@ public:
         return pos;
     }
 
-    iterator insert(const_iterator cpos, std::initializer_list<T> il) {
+    iterator insert(const_iterator cpos, std::initializer_list<value_type> il) {
         return insert(cpos, il.begin(), il.end());
     }
 
@@ -267,7 +277,7 @@ public:
         iterator pos = begin() + (cpos - cbegin());
 
         mystd::move(pos + 1, end(), pos);
-        (end() - 1)->~T();
+        (end() - 1)->~value_type();
 
         --_finish;
         return pos;
@@ -289,12 +299,7 @@ public:
         _finish = _start;
     }
 
-    void push_back(const T &value) { emplace_back(value); }
-    void push_back(T &&value) { emplace_back(std::move(value)); }
-
-    void pop_back() { (--_finish)->~T(); }
-
-    void resize(size_type count, const value_type &value) {
+    void resize(size_type count, const_reference value) {
         iterator new_end = _start + count;
 
         if (count < size()) {
@@ -308,16 +313,16 @@ public:
 
         _finish = new_end;
     }
-    void resize(size_type count) { resize(count, T{}); }
+    void resize(size_type count) { resize(count, value_type{}); }
 
-    void swap(vector<T> &other) noexcept {
+    void swap(vector<value_type> &other) noexcept {
         mystd::swap(_start, other._start);
         mystd::swap(_finish, other._finish);
         mystd::swap(_end_of_storage, other._end_of_storage);
     }
 };
 
-template <class T> auto operator<=>(const vector<T> &lhs, const vector<T> &rhs) {
+template <class T> std::strong_ordering operator<=>(const vector<T> &lhs, const vector<T> &rhs) {
     size_t min_size = std::min(lhs.size(), rhs.size());
 
     for (size_t i = 0; i < min_size; i++) {

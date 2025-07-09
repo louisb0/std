@@ -1,6 +1,6 @@
 #pragma once
 
-#include <type_traits.hpp>
+#include "type_traits.hpp"
 
 namespace mystd {
 
@@ -21,5 +21,8 @@ template <typename T> void swap(T &a, T &b) {
     a = mystd::move(b);
     b = mystd::move(tmp);
 }
+
+template <typename T> class vector;
+template <typename T> void swap(mystd::vector<T> &a, mystd::vector<T> &b) { a.swap(b); }
 
 } // namespace mystd
