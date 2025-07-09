@@ -22,4 +22,13 @@ O move_backward(I first, I last, O d_last) {
     return d_last;
 }
 
+template <forward_iterator I, output_iterator<typename iterator_traits<I>::value_type> O>
+O copy(I first, I last, O d_first) {
+    for (; first != last; ++first, ++d_first) {
+        *d_first = *first;
+    }
+
+    return d_first;
+}
+
 } // namespace mystd

@@ -235,6 +235,8 @@ TEST(Vector, EmplaceBackPushBack) {
         Tracker() { flags |= defaulted; }
         Tracker(const Tracker &other) : flags(other.flags) { flags |= copied; }
         Tracker(Tracker &&other) : flags(other.flags) { flags |= moved; }
+        Tracker &operator=(const Tracker &other) = default;
+        Tracker &operator=(Tracker &&other) = default;
     };
     mystd::vector<Tracker> vec;
 

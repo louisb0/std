@@ -9,14 +9,6 @@
 
 namespace mystd {
 
-/*
-
-- operator=
-- add allocator
-- project wide refactor (includes, consistent mystd::, etc.)
-
-*/
-
 template <typename T> class vector {
     T *_start{};
     T *_finish{};
@@ -100,9 +92,8 @@ public:
             vector temp(other);
             swap(temp);
         } else {
-            // TODO: Implement copy().
             size_t common_size = std::min(size(), other.size());
-            std::copy(other.begin(), other.begin() + common_size, begin());
+            mystd::copy(other.begin(), other.begin() + common_size, begin());
 
             if (size() > common_size) {
                 mystd::destroy(begin() + common_size, end());
@@ -255,12 +246,7 @@ public:
     }
 
     template <typename... Args> reference emplace_back(Args &&...args) {
-        if (size() == capacity()) {
-            reserve(size() == 0 ? 1 : 2 * size());
-        }
-
-        new (_finish) value_type(mystd::forward<Args>(args)...);
-        return *(_finish++);
+        return *emplace(cend(), mystd::forward<Args>(args)...);
     }
 
     void push_back(const_reference value) { emplace_back(value); }
