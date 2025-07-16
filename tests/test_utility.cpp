@@ -26,3 +26,11 @@ TEST(Utility, Swap) {
     EXPECT_EQ(a, 2);
     EXPECT_EQ(b, 1);
 }
+
+TEST(Algorithm, Exchange) {
+    int a = 1;
+    int b = mystd::exchange(a, 2);
+
+    ASSERT_EQ(a, 2);
+    ASSERT_EQ(b, 1);
+}

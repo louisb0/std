@@ -97,17 +97,16 @@ public:
         : vector(other.begin(), other.end(), allocator) {};
 
     vector(vector &&other) noexcept : _allocator(std::move(other._allocator)) {
-        // TODO: Implement std::exchange()
-        _start = std::exchange(other._start, nullptr);
-        _finish = std::exchange(other._finish, nullptr);
-        _end_of_storage = std::exchange(other._end_of_storage, nullptr);
+        _start = mystd::exchange(other._start, nullptr);
+        _finish = mystd::exchange(other._finish, nullptr);
+        _end_of_storage = mystd::exchange(other._end_of_storage, nullptr);
     }
 
     vector(vector &&other, const allocator_type &allocator) : _allocator(allocator) {
         if (_allocator == other._allocator) {
-            _start = std::exchange(other._start, nullptr);
-            _finish = std::exchange(other._finish, nullptr);
-            _end_of_storage = std::exchange(other._end_of_storage, nullptr);
+            _start = mystd::exchange(other._start, nullptr);
+            _finish = mystd::exchange(other._finish, nullptr);
+            _end_of_storage = mystd::exchange(other._end_of_storage, nullptr);
         } else {
             _start = _finish =
                 mystd::allocator_traits<allocator_type>::allocate(_allocator, other.size());
