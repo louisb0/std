@@ -6,7 +6,6 @@
 #include "utility.hpp"
 
 #include <algorithm>
-#include <compare>
 #include <cstddef>
 #include <initializer_list>
 #include <limits>
@@ -14,6 +13,7 @@
 
 namespace mystd {
 
+// TODO: Add assign() and redefine methods in terms of it.
 template <typename T, typename A = mystd::allocator<T>> class vector {
     [[no_unique_address]] A _allocator{};
 
@@ -247,7 +247,7 @@ public:
     // Capacity.
     bool empty() const noexcept { return _start == _finish; }
     size_type size() const noexcept { return _finish - _start; }
-    size_type max_size() const noexcept { return std::numeric_limits<difference_type>::max(); }
+    size_type max_size() const noexcept { return std::numeric_limits<size_type>::max(); }
     size_type capacity() const noexcept { return _end_of_storage - _start; }
 
     void reserve(size_type new_cap) {
@@ -443,17 +443,8 @@ public:
 };
 
 template <typename T, typename A>
-std::strong_ordering operator<=>(const vector<T, A> &lhs, const vector<T, A> &rhs) {
-    size_t min_size = std::min(lhs.size(), rhs.size());
-
-    for (size_t i = 0; i < min_size; i++) {
-        auto cmp = lhs[i] <=> rhs[i];
-        if (cmp != 0) {
-            return cmp;
-        }
-    }
-
-    return lhs.size() <=> rhs.size();
+auto operator<=>(const vector<T, A> &lhs, const vector<T, A> &rhs) {
+    return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
 
 template <typename T, typename A>
