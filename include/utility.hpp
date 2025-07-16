@@ -22,7 +22,4 @@ template <typename T> void swap(T &a, T &b) {
     b = mystd::move(tmp);
 }
 
-template <typename T> class vector;
-template <typename T> void swap(mystd::vector<T> &a, mystd::vector<T> &b) { a.swap(b); }
-
 } // namespace mystd

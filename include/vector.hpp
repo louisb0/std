@@ -5,115 +5,195 @@
 #include "memory.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <compare>
+#include <utility>
 
 namespace mystd {
 
-template <typename T> class vector {
-    T *_start{};
-    T *_finish{};
-    T *_end_of_storage{};
+template <typename T, typename A = mystd::allocator<T>> class vector {
+    [[no_unique_address]] A _allocator{};
+
+    mystd::allocator_traits<A>::pointer _start{};
+    mystd::allocator_traits<A>::pointer _finish{};
+    mystd::allocator_traits<A>::pointer _end_of_storage{};
 
 public:
     using value_type = T;
+    using allocator_type = A;
     using size_type = size_t;
     using difference_type = std::ptrdiff_t;
     using reference = T &;
     using const_reference = const T &;
-    using pointer = T *;
-    using const_pointer = const T *;
-    using iterator = T *;
-    using const_iterator = const T *;
+    using pointer = mystd::allocator_traits<allocator_type>::pointer;
+    using const_pointer = mystd::allocator_traits<allocator_type>::const_pointer;
+    using iterator = pointer;
+    using const_iterator = const_pointer;
     using reverse_iterator = mystd::reverse_iterator<iterator>;
     using const_reverse_iterator = mystd::reverse_iterator<const_iterator>;
 
     // Construction.
-    vector() = default;
+    vector() noexcept(noexcept(allocator_type())) : vector(allocator_type()) {}
 
-    explicit vector(size_type count) {
-        _start = static_cast<value_type *>(operator new(sizeof(value_type) * count));
-        _finish = _start;
+    explicit vector(const allocator_type &allocator) noexcept : _allocator(allocator) {}
+
+    explicit vector(size_type count, const allocator_type &allocator = allocator_type())
+        : _allocator(allocator) {
+        _start = _finish = mystd::allocator_traits<allocator_type>::allocate(_allocator, count);
         _end_of_storage = _start + count;
 
         try {
             mystd::uninitialized_default_construct(_start, _end_of_storage);
             _finish = _end_of_storage;
         } catch (...) {
-            operator delete(_start);
+            mystd::allocator_traits<allocator_type>::deallocate(_allocator, _start, count);
             throw;
         }
     }
 
-    vector(size_type count, const_reference value) {
-        _start = static_cast<value_type *>(operator new(sizeof(value_type) * count));
-        _finish = _start;
+    vector(size_type count, const_reference value,
+           const allocator_type &allocator = allocator_type())
+        : _allocator(allocator) {
+        _start = _finish = mystd::allocator_traits<allocator_type>::allocate(_allocator, count);
         _end_of_storage = _start + count;
 
         try {
             mystd::uninitialized_fill(_start, _end_of_storage, value);
             _finish = _end_of_storage;
         } catch (...) {
-            operator delete(_start);
+            mystd::allocator_traits<allocator_type>::deallocate(_allocator, _start, count);
             throw;
         }
     }
 
-    template <mystd::input_iterator I> vector(I first, I last) {
-        typename mystd::iterator_traits<I>::difference_type count = mystd::distance(first, last);
+    template <mystd::input_iterator I>
+    vector(I first, I last, const allocator_type &allocator = allocator_type())
+        : _allocator(allocator) {
+        if constexpr (mystd::forward_iterator<I>) {
+            auto count = mystd::distance(first, last);
 
-        _start = static_cast<value_type *>(operator new(sizeof(value_type) * count));
-        _finish = _start;
-        _end_of_storage = _start + count;
+            _start = _finish = mystd::allocator_traits<allocator_type>::allocate(_allocator, count);
+            _end_of_storage = _start + count;
 
-        try {
-            mystd::uninitialized_copy(first, last, _start);
-            _finish = _end_of_storage;
-        } catch (...) {
-            operator delete(_start);
-            throw;
+            try {
+                _finish = mystd::uninitialized_copy(first, last, _start);
+            } catch (...) {
+                mystd::allocator_traits<allocator_type>::deallocate(_allocator, _start, count);
+                throw;
+            }
+        } else {
+            for (; first != last; ++first) {
+                push_back(*first);
+            }
         }
     }
-    vector(std::initializer_list<value_type> il) : vector(il.begin(), il.end()) {};
 
-    vector(const vector &other) : vector(other.begin(), other.end()) {};
-    vector(vector &&other) noexcept { swap(other); }
+    vector(const vector &other)
+        : vector(other.begin(), other.end(),
+                 mystd::allocator_traits<allocator_type>::select_on_container_copy_construction(
+                     other._allocator)) {};
 
-    ~vector() noexcept {
-        mystd::destroy(begin(), end());
-        operator delete(_start);
+    vector(const vector &other, const allocator_type &allocator)
+        : vector(other.begin(), other.end(), allocator) {};
+
+    vector(vector &&other) noexcept : _allocator(std::move(other._allocator)) {
+        // TODO: Implement std::exchange()
+        _start = std::exchange(other._start, nullptr);
+        _finish = std::exchange(other._finish, nullptr);
+        _end_of_storage = std::exchange(other._end_of_storage, nullptr);
+    }
+
+    vector(vector &&other, const allocator_type &allocator) : _allocator(allocator) {
+        if (_allocator == other._allocator) {
+            _start = std::exchange(other._start, nullptr);
+            _finish = std::exchange(other._finish, nullptr);
+            _end_of_storage = std::exchange(other._end_of_storage, nullptr);
+        } else {
+            _start = _finish =
+                mystd::allocator_traits<allocator_type>::allocate(_allocator, other.size());
+            _end_of_storage = _start + other.size();
+
+            try {
+                _finish = mystd::uninitialized_move(other.begin(), other.end(), begin());
+            } catch (...) {
+                mystd::allocator_traits<allocator_type>::deallocate(_allocator, _start,
+                                                                    other.size());
+                throw;
+            }
+        }
+    }
+
+    vector(std::initializer_list<value_type> il, const allocator_type &allocator = allocator_type())
+        : vector(il.begin(), il.end(), allocator) {};
+
+    ~vector() {
+        if (_start) {
+            mystd::destroy(begin(), end());
+            mystd::allocator_traits<allocator_type>::deallocate(_allocator, _start, capacity());
+        }
     }
 
     vector &operator=(const vector &other) {
-        if (this == &other) {
-            return *this;
-        }
+        if (this != &other) {
+            if constexpr (mystd::allocator_traits<
+                              allocator_type>::propagate_on_container_copy_assignment::value) {
+                if (_allocator != other._allocator) {
+                    if (_start) {
+                        mystd::destroy(begin(), end());
+                        mystd::allocator_traits<allocator_type>::deallocate(_allocator, _start,
+                                                                            capacity());
+                    }
 
-        if (other.size() > capacity()) {
-            vector temp(other);
-            swap(temp);
-        } else {
-            size_t common_size = std::min(size(), other.size());
-            mystd::copy(other.begin(), other.begin() + common_size, begin());
-
-            if (size() > common_size) {
-                mystd::destroy(begin() + common_size, end());
-            } else if (other.size() > common_size) {
-                mystd::uninitialized_copy(other.begin() + common_size, other.end(), end());
+                    _start = _finish = _end_of_storage = nullptr;
+                    _allocator = other._allocator;
+                }
             }
 
-            _finish = _start + other.size();
+            if (other.size() > capacity()) {
+                vector temp(other, _allocator);
+                swap(temp);
+            } else {
+                size_type common_size = std::min(size(), other.size());
+                mystd::copy(other.begin(), other.begin() + common_size, begin());
+
+                if (size() > common_size) {
+                    mystd::destroy(begin() + common_size, end());
+                } else if (other.size() > common_size) {
+                    mystd::uninitialized_copy(other.begin() + common_size, other.end(), end());
+                }
+
+                _finish = _start + other.size();
+            }
         }
 
         return *this;
     }
 
-    vector &operator=(std::initializer_list<value_type> il) noexcept {
-        *this = vector(il);
+    vector &operator=(vector &&other) {
+        constexpr bool propagate =
+            mystd::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value;
+
+        if (propagate || _allocator == other._allocator) {
+            mystd::swap(_allocator, other._allocator);
+            mystd::swap(_start, other._start);
+            mystd::swap(_finish, other._finish);
+            mystd::swap(_end_of_storage, other._end_of_storage);
+        } else {
+            reserve(other.size());
+
+            if constexpr (std::is_nothrow_move_constructible_v<T> ||
+                          !std::is_copy_constructible_v<T>) {
+                _finish = mystd::uninitialized_move(other.begin(), other.end(), _start);
+            } else {
+                _finish = mystd::uninitialized_copy(other.begin(), other.end(), _start);
+            }
+        }
+
         return *this;
     }
 
-    vector &operator=(vector &&other) noexcept {
-        swap(other);
+    vector &operator=(std::initializer_list<value_type> il) {
+        *this = vector(il);
         return *this;
     }
 
@@ -142,6 +222,8 @@ public:
         }
         return *(_start + pos);
     }
+
+    allocator_type get_allocator() const noexcept { return _allocator; }
 
     // Iterators.
     iterator begin() noexcept { return _start; }
@@ -176,9 +258,8 @@ public:
                 "mystd::vector::reserve() was called with too large a capacity.");
         }
 
-        value_type *new_start =
-            static_cast<value_type *>(operator new(sizeof(value_type) * new_cap));
-        value_type *new_finish = new_start;
+        pointer new_start = mystd::allocator_traits<allocator_type>::allocate(_allocator, new_cap);
+        pointer new_finish = new_start;
 
         try {
             if constexpr (std::is_nothrow_move_constructible_v<T> ||
@@ -189,13 +270,15 @@ public:
             }
 
             mystd::destroy(begin(), end());
-            operator delete(_start);
+            if (_start) {
+                mystd::allocator_traits<allocator_type>::deallocate(_allocator, _start, capacity());
+            }
 
             _start = new_start;
             _finish = new_finish;
             _end_of_storage = new_start + new_cap;
         } catch (...) {
-            operator delete(new_start);
+            mystd::allocator_traits<allocator_type>::deallocate(_allocator, new_start, new_cap);
             throw;
         }
     }
@@ -205,41 +288,43 @@ public:
             return;
         }
 
-        value_type *new_start =
-            static_cast<value_type *>(operator new(sizeof(value_type) * size()));
-        value_type *new_finish = new_start;
+        pointer new_start = mystd::allocator_traits<allocator_type>::allocate(_allocator, size());
+        pointer new_finish = new_start;
 
         try {
-            if constexpr (std::is_nothrow_move_constructible_v<T> ||
-                          !std::is_copy_constructible_v<T>) {
+            if constexpr (std::is_nothrow_move_constructible_v<value_type> ||
+                          !std::is_copy_constructible_v<value_type>) {
                 new_finish = mystd::uninitialized_move(begin(), end(), new_start);
             } else {
                 new_finish = mystd::uninitialized_copy(begin(), end(), new_start);
             }
 
             mystd::destroy(begin(), end());
-            operator delete(_start);
+            if (_start) {
+                mystd::allocator_traits<allocator_type>::deallocate(_allocator, _start, capacity());
+            }
 
             _start = new_start;
             _finish = new_finish;
             _end_of_storage = new_start + size();
         } catch (...) {
-            operator delete(new_start);
+            mystd::allocator_traits<allocator_type>::deallocate(_allocator, new_start, size());
             throw;
         }
     }
 
     // Modifiers.
     template <typename... Args> iterator emplace(const_iterator cpos, Args &&...args) {
-        difference_type offset = mystd::distance(cbegin(), cpos);
+        auto offset = mystd::distance(cbegin(), cpos);
         if (size() == capacity()) {
             reserve(size() == 0 ? 1 : 2 * size());
         }
 
         iterator pos = begin() + offset;
 
-        new (end()) value_type(mystd::forward<Args>(args)...);
-        std::rotate(pos, end(), end() + 1); // NOTE: Consider implementing.
+        mystd::allocator_traits<allocator_type>::construct(_allocator, end(),
+                                                           mystd::forward<Args>(args)...);
+        std::rotate(pos, end(), end() + 1);
 
         ++_finish;
         return pos;
@@ -251,11 +336,15 @@ public:
 
     void push_back(const_reference value) { emplace_back(value); }
     void push_back(value_type &&value) { emplace_back(std::move(value)); }
-    void pop_back() noexcept { (--_finish)->~value_type(); }
+
+    void pop_back() noexcept {
+        --_finish;
+        mystd::allocator_traits<allocator_type>::destroy(_allocator, _finish);
+    }
 
     iterator insert(const_iterator cpos, const_reference value) { return emplace(cpos, value); }
     iterator insert(const_iterator cpos, value_type &&value) {
-        return emplace(cpos, std::move(value));
+        return emplace(cpos, mystd::move(value));
     }
 
     iterator insert(const_iterator cpos, size_type count, const_reference value) {
@@ -293,7 +382,7 @@ public:
         iterator pos = begin() + (cpos - cbegin());
 
         mystd::move(pos + 1, end(), pos);
-        (end() - 1)->~value_type();
+        mystd::allocator_traits<allocator_type>::destroy(_allocator, end() - 1);
 
         --_finish;
         return pos;
@@ -331,14 +420,20 @@ public:
     }
     void resize(size_type count) { resize(count, value_type{}); }
 
+    // NOTE: It is UB to call swap() on containers with different allocators.
     void swap(vector &other) noexcept {
+        if constexpr (mystd::allocator_traits<allocator_type>::propagate_on_container_swap::value) {
+            mystd::swap(_allocator, other._allocator);
+        }
+
         mystd::swap(_start, other._start);
         mystd::swap(_finish, other._finish);
         mystd::swap(_end_of_storage, other._end_of_storage);
     }
 };
 
-template <class T> std::strong_ordering operator<=>(const vector<T> &lhs, const vector<T> &rhs) {
+template <typename T, typename A>
+std::strong_ordering operator<=>(const vector<T, A> &lhs, const vector<T, A> &rhs) {
     size_t min_size = std::min(lhs.size(), rhs.size());
 
     for (size_t i = 0; i < min_size; i++) {
@@ -351,12 +446,15 @@ template <class T> std::strong_ordering operator<=>(const vector<T> &lhs, const 
     return lhs.size() <=> rhs.size();
 }
 
-template <class T> bool operator==(const vector<T> &lhs, const vector<T> &rhs) {
+template <typename T, typename A>
+bool operator==(const vector<T, A> &lhs, const vector<T, A> &rhs) {
     if (lhs.size() != rhs.size()) {
         return false;
     }
 
     return (lhs <=> rhs) == 0;
 }
+
+template <typename T, typename A> void swap(vector<T, A> &a, vector<T, A> &b) { a.swap(b); }
 
 } // namespace mystd

@@ -4,6 +4,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 TEST(Vector, DefaultConstructor) {
     mystd::vector<int> vec;
@@ -115,12 +116,164 @@ TEST(Vector, CopyAssignment) {
     }
 }
 
+TEST(Vector, PropagateContainerCopyAssignment) {
+    static size_t id{};
+
+    struct NonPropagating {
+    private:
+        size_t _id;
+
+    public:
+        using value_type = int;
+        using size_type = size_t;
+        using propagate_on_container_copy_assignment = std::false_type;
+
+        NonPropagating() : _id(id++) {}
+
+        int *allocate(size_type n) { return static_cast<int *>(::operator new(sizeof(int) * n)); }
+        void deallocate(int *p, size_type n) { ::operator delete(p); }
+
+        bool operator==(const NonPropagating &other) const { return _id == other._id; }
+    };
+
+    {
+        mystd::vector<int, NonPropagating> v1, v2;
+        v2 = v1;
+
+        EXPECT_NE(v1.get_allocator(), v2.get_allocator());
+        EXPECT_TRUE(v1.empty());
+        EXPECT_TRUE(v2.empty());
+    }
+
+    {
+        mystd::vector<int, NonPropagating> v1 = {1, 2, 3};
+        mystd::vector<int, NonPropagating> v2;
+        v2 = v1;
+
+        EXPECT_NE(v1.get_allocator(), v2.get_allocator());
+        EXPECT_EQ(v1, (mystd::vector<int, NonPropagating>{1, 2, 3}));
+        EXPECT_EQ(v2, (mystd::vector<int, NonPropagating>{1, 2, 3}));
+    }
+
+    struct Propagating {
+    private:
+        size_t _id;
+
+    public:
+        using value_type = int;
+        using size_type = size_t;
+        using propagate_on_container_copy_assignment = std::true_type;
+
+        Propagating() : _id(id++) {}
+
+        int *allocate(size_type n) { return static_cast<int *>(::operator new(sizeof(int) * n)); }
+        void deallocate(int *p, size_type n) { ::operator delete(p); }
+
+        bool operator==(const Propagating &other) const { return _id == other._id; }
+    };
+
+    {
+        mystd::vector<int, Propagating> v1, v2;
+        v2 = v1;
+
+        EXPECT_EQ(v1.get_allocator(), v2.get_allocator());
+        EXPECT_TRUE(v1.empty());
+        EXPECT_TRUE(v2.empty());
+    }
+
+    {
+        mystd::vector<int, Propagating> v1 = {1, 2, 3};
+        mystd::vector<int, Propagating> v2;
+        v2 = v1;
+
+        EXPECT_EQ(v1.get_allocator(), v2.get_allocator());
+        EXPECT_EQ(v1, (mystd::vector<int, Propagating>{1, 2, 3}));
+        EXPECT_EQ(v2, (mystd::vector<int, Propagating>{1, 2, 3}));
+    }
+}
+
 TEST(Vector, MoveAssignment) {
     mystd::vector<int> vec1 = {1, 2};
     mystd::vector<int> vec2 = {3};
 
     vec1 = std::move(vec2);
     EXPECT_EQ(vec1, (mystd::vector<int>{3}));
+}
+
+TEST(Vector, PropagateContainerMoveAssignment) {
+    static size_t id{};
+
+    struct NonPropagating {
+    private:
+        size_t _id;
+
+    public:
+        using value_type = int;
+        using size_type = size_t;
+        using propagate_on_container_move_assignment = std::false_type;
+
+        NonPropagating() : _id(id++) {}
+
+        int *allocate(size_type n) { return static_cast<int *>(::operator new(sizeof(int) * n)); }
+        void deallocate(int *p, size_type n) { ::operator delete(p); }
+
+        bool operator==(const NonPropagating &other) const { return _id == other._id; }
+    };
+
+    {
+        mystd::vector<int, NonPropagating> v1, v2;
+        v2 = mystd::move(v1);
+
+        EXPECT_NE(v1.get_allocator(), v2.get_allocator());
+        EXPECT_TRUE(v2.empty());
+    }
+
+    {
+        mystd::vector<int, NonPropagating> v1 = {1, 2, 3};
+        mystd::vector<int, NonPropagating> v2;
+        v2 = mystd::move(v1);
+
+        EXPECT_NE(v1.get_allocator(), v2.get_allocator());
+        EXPECT_EQ(v2, (mystd::vector<int, NonPropagating>{1, 2, 3}));
+    }
+
+    struct Propagating {
+    private:
+        size_t _id;
+
+    public:
+        using value_type = int;
+        using size_type = size_t;
+        using propagate_on_container_move_assignment = std::true_type;
+
+        Propagating() : _id(id++) {}
+
+        int *allocate(size_type n) { return static_cast<int *>(::operator new(sizeof(int) * n)); }
+        void deallocate(int *p, size_type n) { ::operator delete(p); }
+
+        bool operator==(const Propagating &other) const { return _id == other._id; }
+    };
+
+    {
+        mystd::vector<int, Propagating> v1, v2;
+        Propagating alloc = v1.get_allocator();
+
+        v2 = mystd::move(v1);
+
+        EXPECT_EQ(v2.get_allocator(), alloc);
+        EXPECT_TRUE(v2.empty());
+    }
+
+    {
+        mystd::vector<int, Propagating> v1 = {1, 2, 3};
+        mystd::vector<int, Propagating> v2;
+        Propagating alloc = v1.get_allocator();
+
+        v2 = mystd::move(v1);
+
+        EXPECT_EQ(v2.get_allocator(), alloc);
+        EXPECT_EQ(v2, (mystd::vector<int, Propagating>{1, 2, 3}));
+    }
 }
 
 TEST(Vector, InitializerListAssignment) {
