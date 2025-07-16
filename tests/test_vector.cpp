@@ -444,7 +444,7 @@ TEST(Vector, InsertCount) {
     EXPECT_EQ(vec, (mystd::vector<int>{1, 1, 2, 2, 3, 3}));
 }
 
-TEST(Vector, InsertIterators) {
+TEST(Vector, InsertForwardIterators) {
     mystd::vector<int> to;
 
     mystd::vector<int> empty;
@@ -463,6 +463,51 @@ TEST(Vector, InsertIterators) {
 
     mystd::vector<int> third = {3};
     it = to.insert(to.begin() + 2, third.begin(), third.end());
+    EXPECT_EQ(*it, 3);
+    EXPECT_EQ(to, (mystd::vector<int>{1, 2, 3, 4, 5}));
+}
+
+TEST(Vector, InsertInputIterators) {
+    class InputIterator : public mystd::iterator<mystd::input_iterator_tag, int> {
+        int *_ptr;
+
+    public:
+        InputIterator(int *ptr) : _ptr(ptr) {}
+
+        reference operator*() const { return *_ptr; }
+
+        InputIterator &operator++() {
+            ++_ptr;
+            return *this;
+        }
+        InputIterator operator++(int) {
+            auto tmp = *this;
+            ++_ptr;
+            return tmp;
+        }
+
+        bool operator==(const InputIterator &other) const { return _ptr == other._ptr; }
+    };
+    EXPECT_TRUE(mystd::input_iterator<InputIterator>);
+
+    mystd::vector<int> to;
+
+    int empty[] = {};
+    to.insert(to.begin(), InputIterator{empty}, InputIterator{empty});
+    EXPECT_EQ(to.size(), 0);
+
+    int first[] = {1, 2};
+    auto it = to.insert(to.begin(), InputIterator{first}, InputIterator{first + 2});
+    EXPECT_EQ(*it, 1);
+    EXPECT_EQ(to, (mystd::vector<int>{1, 2}));
+
+    int second[] = {4, 5};
+    it = to.insert(to.end(), InputIterator{second}, InputIterator{second + 2});
+    EXPECT_EQ(*it, 4);
+    EXPECT_EQ(to, (mystd::vector<int>{1, 2, 4, 5}));
+
+    int third[] = {3};
+    it = to.insert(to.begin() + 2, InputIterator{third}, InputIterator{third + 1});
     EXPECT_EQ(*it, 3);
     EXPECT_EQ(to, (mystd::vector<int>{1, 2, 3, 4, 5}));
 }

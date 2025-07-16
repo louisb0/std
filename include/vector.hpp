@@ -361,16 +361,24 @@ public:
     }
 
     template <mystd::input_iterator I> iterator insert(const_iterator cpos, I first, I last) {
-        size_type count = static_cast<size_type>(std::distance(first, last));
         difference_type pos_offset = cpos - cbegin();
-        reserve(size() + count);
+        size_type original_size = size();
+
+        if constexpr (mystd::forward_iterator<I>) {
+            size_type count = static_cast<size_type>(std::distance(first, last));
+            reserve(size() + count);
+
+            mystd::uninitialized_copy(first, last, end());
+            _finish += count;
+        } else {
+            for (; first != last; ++first) {
+                push_back(*first);
+            }
+        }
 
         iterator pos = begin() + pos_offset;
+        std::rotate(pos, begin() + original_size, end());
 
-        mystd::uninitialized_copy(first, last, end());
-        std::rotate(pos, end(), end() + count);
-
-        _finish += count;
         return pos;
     }
 
