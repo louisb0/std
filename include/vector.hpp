@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cassert>
 #include <compare>
+#include <numeric>
 #include <utility>
 
 namespace mystd {
