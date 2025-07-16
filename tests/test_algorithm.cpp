@@ -61,3 +61,22 @@ TEST(Algorithm, Copy) {
         EXPECT_TRUE(dest[i].is_copy);
     }
 }
+
+TEST(Algorithm, Fill) {
+    int data[5]{};
+
+    mystd::fill(data, data + 5, 5);
+    for (int i = 0; i < 5; i++) {
+        EXPECT_EQ(data[i], 5);
+    }
+}
+
+TEST(Algorithm, SwapRanges) {
+    int d1[3]{};
+    int d2[3]{1, 2, 3};
+
+    mystd::swap_ranges(d2, d2 + 3, d1);
+    for (int i = 0; i < 3; i++) {
+        EXPECT_EQ(d1[i], i + 1);
+    }
+}

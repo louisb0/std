@@ -18,37 +18,37 @@ template <mystd::forward_iterator I> void destroy(I first, I last) {
 }
 
 template <mystd::input_iterator I, mystd::forward_iterator O>
-O uninitialized_copy(I first, I last, O result) {
+O uninitialized_copy(I first, I last, O d_first) {
     using T = typename mystd::iterator_traits<O>::value_type;
     using U = typename mystd::iterator_traits<I>::value_type;
     static_assert(std::is_constructible_v<T, const U &>);
 
-    O current = result;
+    O current = d_first;
     try {
         for (; first != last; ++first, ++current) {
             ::new (static_cast<void *>(std::addressof(*current))) T(*first);
         }
         return current;
     } catch (...) {
-        destroy(result, current);
+        destroy(d_first, current);
         throw;
     }
 }
 
 template <mystd::input_iterator I, mystd::forward_iterator O>
-O uninitialized_move(I first, I last, O result) {
+O uninitialized_move(I first, I last, O d_first) {
     using T = typename mystd::iterator_traits<O>::value_type;
     using U = typename mystd::iterator_traits<I>::value_type;
     static_assert(std::is_constructible_v<T, U &&>);
 
-    O current = result;
+    O current = d_first;
     try {
         for (; first != last; ++first, ++current) {
             ::new (static_cast<void *>(std::addressof(*current))) T(mystd::move(*first));
         }
         return current;
     } catch (...) {
-        destroy(result, current);
+        destroy(d_first, current);
         throw;
     }
 }

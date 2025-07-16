@@ -79,6 +79,25 @@ TEST(Vector, MoveConstructor) {
     EXPECT_FALSE(move_constructed.empty());
 }
 
+TEST(Vector, Comparison) {
+    mystd::vector<int> vec1 = {1, 2, 3};
+    mystd::vector<int> vec2 = {1, 2, 3};
+    mystd::vector<int> vec3 = {1, 2, 4};
+    mystd::vector<int> vec4 = {1, 2};
+
+    EXPECT_TRUE(vec1 == vec2);
+    EXPECT_TRUE(vec1 != vec3);
+
+    EXPECT_TRUE(vec1 < vec3);
+    EXPECT_TRUE(vec3 > vec1);
+
+    EXPECT_TRUE(vec4 < vec3);
+    EXPECT_TRUE(vec3 > vec4);
+
+    EXPECT_TRUE(vec1 <= vec2);
+    EXPECT_TRUE(vec1 >= vec2);
+}
+
 TEST(Vector, CopyAssignment) {
     // Copy constructor proxy
     {
@@ -281,25 +300,6 @@ TEST(Vector, InitializerListAssignment) {
 
     vec = {1, 2, 3};
     EXPECT_EQ(vec, (mystd::vector<int>{1, 2, 3}));
-}
-
-TEST(Vector, Comparison) {
-    mystd::vector<int> vec1 = {1, 2, 3};
-    mystd::vector<int> vec2 = {1, 2, 3};
-    mystd::vector<int> vec3 = {1, 2, 4};
-    mystd::vector<int> vec4 = {1, 2};
-
-    EXPECT_TRUE(vec1 == vec2);
-    EXPECT_TRUE(vec1 != vec3);
-
-    EXPECT_TRUE(vec1 < vec3);
-    EXPECT_TRUE(vec3 > vec1);
-
-    EXPECT_TRUE(vec4 < vec3);
-    EXPECT_TRUE(vec3 > vec4);
-
-    EXPECT_TRUE(vec1 <= vec2);
-    EXPECT_TRUE(vec1 >= vec2);
 }
 
 TEST(Vector, ElementAccess) {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "iterator.hpp"
+#include "bits/iterator_concepts.hpp"
 #include "utility.hpp"
 
 namespace mystd {
@@ -29,6 +29,21 @@ template <mystd::forward_iterator I,
 O copy(I first, I last, O d_first) {
     for (; first != last; ++first, ++d_first) {
         *d_first = *first;
+    }
+
+    return d_first;
+}
+
+template <mystd::forward_iterator I, typename T> void fill(I first, I last, const T &value) {
+    for (; first != last; ++first) {
+        *first = value;
+    }
+}
+
+template <mystd::forward_iterator I1, mystd::forward_iterator I2>
+I2 swap_ranges(I1 first, I1 last, I2 d_first) {
+    for (; first != last; ++first, ++d_first) {
+        mystd::swap(*first, *d_first);
     }
 
     return d_first;
