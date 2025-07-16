@@ -88,47 +88,27 @@ public:
     }
 };
 
-// TODO: Use <=> instead.
+template <typename I1, typename I2>
+auto operator<=>(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs)
+    -> decltype(rhs.base() <=> lhs.base()) {
+    return rhs.base() <=> lhs.base();
+}
+
 template <typename I1, typename I2>
 bool operator==(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs) {
     return lhs.base() == rhs.base();
 }
 
 template <typename I1, typename I2>
-bool operator!=(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs) {
-    return lhs.base() != rhs.base();
-}
-
-template <typename I1, typename I2>
-bool operator<(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs) {
-    return lhs.base() > rhs.base();
-}
-
-template <typename I1, typename I2>
-bool operator<=(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs) {
-    return lhs.base() >= rhs.base();
-}
-
-template <typename I1, typename I2>
-bool operator>(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs) {
-    return lhs.base() < rhs.base();
-}
-
-template <typename I1, typename I2>
-bool operator>=(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs) {
-    return lhs.base() <= rhs.base();
+auto operator-(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs)
+    -> decltype(rhs.base() - lhs.base()) {
+    return rhs.base() - lhs.base();
 }
 
 template <typename I>
 reverse_iterator<I> operator+(typename reverse_iterator<I>::difference_type n,
                               const reverse_iterator<I> &it) {
     return it.operator+(n);
-}
-
-template <typename I1, typename I2>
-auto operator-(const reverse_iterator<I1> &lhs, const reverse_iterator<I2> &rhs)
-    -> decltype(rhs.base() - lhs.base()) {
-    return rhs.base() - lhs.base();
 }
 
 } // namespace mystd
