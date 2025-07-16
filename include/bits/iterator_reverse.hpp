@@ -2,19 +2,23 @@
 
 #include "bits/iterator_concepts.hpp"
 
+#include <concepts>
+#include <memory>
+#include <type_traits>
+
 namespace mystd {
 
-template <bidirectional_iterator I> class reverse_iterator {
+template <mystd::bidirectional_iterator I> class reverse_iterator {
     I _current{I()};
 
 public:
     using iterator_type = I;
 
-    using difference_type = iterator_traits<I>::difference_type;
-    using value_type = iterator_traits<I>::value_type;
-    using pointer = iterator_traits<I>::pointer;
-    using reference = iterator_traits<I>::reference;
-    using iterator_category = iterator_traits<I>::iterator_category;
+    using difference_type = mystd::iterator_traits<I>::difference_type;
+    using value_type = mystd::iterator_traits<I>::value_type;
+    using pointer = mystd::iterator_traits<I>::pointer;
+    using reference = mystd::iterator_traits<I>::reference;
+    using iterator_category = mystd::iterator_traits<I>::iterator_category;
 
     reverse_iterator() = default;
 

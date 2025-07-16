@@ -1,28 +1,31 @@
 #pragma once
 
 #include "iterator.hpp"
+#include "utility.hpp"
 
 namespace mystd {
 
-template <input_iterator I, output_iterator<typename iterator_traits<I>::value_type &&> O>
+template <mystd::input_iterator I,
+          mystd::output_iterator<typename mystd::iterator_traits<I>::value_type &&> O>
 O move(I first, I last, O d_first) {
     for (; first != last; ++first, ++d_first) {
-        *d_first = std::move(*first);
+        *d_first = mystd::move(*first);
     }
 
     return d_first;
 }
 
-template <bidirectional_iterator I, bidirectional_iterator O>
+template <mystd::bidirectional_iterator I, mystd::bidirectional_iterator O>
 O move_backward(I first, I last, O d_last) {
     while (first != last) {
-        *(--d_last) = std::move(*--last);
+        *(--d_last) = mystd::move(*--last);
     }
 
     return d_last;
 }
 
-template <forward_iterator I, output_iterator<typename iterator_traits<I>::value_type> O>
+template <mystd::forward_iterator I,
+          mystd::output_iterator<typename mystd::iterator_traits<I>::value_type> O>
 O copy(I first, I last, O d_first) {
     for (; first != last; ++first, ++d_first) {
         *d_first = *first;

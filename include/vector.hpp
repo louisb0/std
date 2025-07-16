@@ -3,12 +3,14 @@
 #include "algorithm.hpp"
 #include "iterator.hpp"
 #include "memory.hpp"
+#include "utility.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <compare>
-#include <numeric>
-#include <utility>
+#include <cstddef>
+#include <initializer_list>
+#include <limits>
+#include <stdexcept>
 
 namespace mystd {
 
@@ -22,7 +24,7 @@ template <typename T, typename A = mystd::allocator<T>> class vector {
 public:
     using value_type = T;
     using allocator_type = A;
-    using size_type = size_t;
+    using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
     using reference = T &;
     using const_reference = const T &;

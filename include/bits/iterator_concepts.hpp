@@ -1,7 +1,6 @@
 #pragma once
 
 #include "bits/iterator_base_types.hpp"
-#include "type_traits.hpp"
 #include "utility.hpp"
 
 #include <concepts>
@@ -47,7 +46,7 @@ template <typename I>
 concept input_or_output_iterator =
     weakly_incrementable<I> &&
     requires(I i) { *i; } &&
-    is_referenceable_v<decltype(*std::declval<I>())>;
+    mystd::is_referenceable_v<decltype(*std::declval<I>())>;
 
 /**
  * [semantics]
@@ -70,7 +69,7 @@ concept input_iterator =
     input_or_output_iterator<I> &&
     std::indirectly_readable<I> &&
     std::equality_comparable<I> &&
-    std::derived_from<typename iterator_traits<I>::iterator_category, input_iterator_tag>;
+    std::derived_from<typename mystd::iterator_traits<I>::iterator_category, mystd::input_iterator_tag>;
 
 /**
  * [semantics]
@@ -83,7 +82,7 @@ template <typename I>
 concept forward_iterator =
     input_iterator<I> &&
     incrementable<I> &&
-    std::derived_from<typename iterator_traits<I>::iterator_category, forward_iterator_tag>;
+    std::derived_from<typename mystd::iterator_traits<I>::iterator_category, mystd::forward_iterator_tag>;
 
 /**
  * [semantics]
@@ -102,7 +101,7 @@ concept bidirectional_iterator =
         { --i } -> std::same_as<I &>;
         { i-- } -> std::same_as<I>;
     } &&
-    std::derived_from<typename iterator_traits<I>::iterator_category, bidirectional_iterator_tag>;
+    std::derived_from<typename mystd::iterator_traits<I>::iterator_category, mystd::bidirectional_iterator_tag>;
 
 /**
  * [semantics]
@@ -121,14 +120,14 @@ concept random_access_iterator =
     bidirectional_iterator<I> &&
     std::totally_ordered<I> &&
     std::sized_sentinel_for<I, I> &&
-    requires(I i, const I j, const iterator_traits<I>::difference_type n) {
+    requires(I i, const I j, const mystd::iterator_traits<I>::difference_type n) {
         { i += n } -> std::same_as<I &>;
         { i -= n } -> std::same_as<I &>;
         { j + n } -> std::same_as<I>;
         { j - n } -> std::same_as<I>;
-        { j[n] } -> std::same_as<typename iterator_traits<I>::reference>;
+        { j[n] } -> std::same_as<typename mystd::iterator_traits<I>::reference>;
     } &&
-    std::derived_from<typename iterator_traits<I>::iterator_category, random_access_iterator_tag>;
+    std::derived_from<typename mystd::iterator_traits<I>::iterator_category, mystd::random_access_iterator_tag>;
 
 // clang-format on
 

@@ -3,6 +3,9 @@
 #include "bits/iterator_base_types.hpp"
 #include "bits/iterator_concepts.hpp"
 
+#include <memory>
+#include <type_traits>
+
 namespace mystd {
 
 template <mystd::forward_iterator I> void destroy(I first, I last) {

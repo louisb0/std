@@ -7,12 +7,13 @@
 
 namespace mystd {
 
-template <input_iterator I> typename iterator_traits<I>::difference_type distance(I first, I last) {
-    if constexpr (std::derived_from<typename iterator_traits<I>::iterator_category,
-                                    random_access_iterator_tag>) {
+template <mystd::input_iterator I>
+typename mystd::iterator_traits<I>::difference_type distance(I first, I last) {
+    if constexpr (std::derived_from<typename mystd::iterator_traits<I>::iterator_category,
+                                    mystd::random_access_iterator_tag>) {
         return last - first;
     } else {
-        typename iterator_traits<I>::difference_type result{};
+        typename mystd::iterator_traits<I>::difference_type result{};
         while (first != last) {
             ++first;
             ++result;
