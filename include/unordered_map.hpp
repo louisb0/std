@@ -5,6 +5,7 @@
 #include "utility.hpp"
 
 #include <functional>
+#include <stdexcept>
 #include <utility>
 
 namespace mystd {
@@ -40,30 +41,55 @@ public:
     size_type max_size() const noexcept { return std::numeric_limits<size_type>::max(); }
 
     // Access.
-    iterator find(const key_type &key) {
-        size_type hash = _hasher(key);
-        size_type bucket = hash % bucket_count();
-        if (!_buckets[bucket]) {
-            return end();
-        }
+    iterator find(const key_type &key) noexcept {
+        size_type bucket = _hasher(key) % bucket_count();
 
-        node_type *cur = _buckets[bucket]->next;
-        while (cur && (cur->hash % bucket_count() == bucket)) {
-            if (cur->data.first == key) {
-                return iterator(cur);
+        for (auto it = begin(bucket); it != end(bucket); ++it) {
+            if (it->first == key) {
+                return iterator(it.node());
             }
-
-            cur = cur->next;
         }
 
         return end();
     }
 
+    const_iterator find(const key_type &key) const noexcept {
+        return iterator(static_cast<unordered_map *>(this)->find(key).node());
+    }
+
+    mapped_type &at(const key_type &key) {
+        auto it = find(key);
+        if (it == end()) {
+            throw std::out_of_range(
+                "mystd::unordered_map::at() was called with a non-existent key.");
+        }
+
+        return it->second;
+    }
+
+    const mapped_type &at(const key_type &key) const {
+        return static_cast<unordered_map *>(*this)->at(key);
+    }
+
+    mapped_type &operator[](const key_type &key) noexcept {
+        node_type *node = find(key).node();
+        if (node) {
+            return node->data.second;
+        }
+
+        auto [it, _] = emplace(key, mapped_type{});
+        return it->second;
+    }
+
+    bool contains(const key_type &key) const noexcept { return find(key) != end(); }
+    size_type count(const key_type &key) const noexcept { return contains(key) ? 1 : 0; }
+
     // Modifiers.
     template <typename... Args> std::pair<iterator, bool> emplace(Args &&...args) {
         value_type data(mystd::forward<Args>(args)...);
-        if (find(data.first) != end()) {
-            return std::make_pair(end(), false);
+        auto it = find(data.first);
+        if (it != end()) {
+            return std::make_pair(it, false);
         }
 
         size_type hash = _hasher(data.first);
@@ -92,11 +118,11 @@ public:
     // Iterators.
     iterator begin() noexcept { return iterator(_before_begin.next); }
     const_iterator begin() const noexcept { return cbegin(); }
-    iterator cbegin() const noexcept { return const_iterator(_before_begin.next); }
+    const_iterator cbegin() const noexcept { return const_iterator(_before_begin.next); }
 
     iterator end() noexcept { return iterator(nullptr); }
     const_iterator end() const noexcept { return cend(); }
-    iterator cend() const noexcept { return const_iterator(nullptr); }
+    const_iterator cend() const noexcept { return const_iterator(nullptr); }
 
     // Buckets.
     size_type bucket_count() const noexcept { return _bucket_count; }
@@ -119,7 +145,7 @@ public:
     local_iterator end(size_type bucket) noexcept {
         return local_iterator(nullptr, bucket, _bucket_count);
     }
-    local_iterator end(size_type bucket) const noexcept { return cend(bucket); }
+    const_local_iterator end(size_type bucket) const noexcept { return cend(bucket); }
     const_local_iterator cend(size_type bucket) const noexcept {
         return const_local_iterator(nullptr, bucket, _bucket_count);
     }
