@@ -1,5 +1,6 @@
 #pragma once
 
+#include "algorithm.hpp"
 #include "bits/hashtable_node.hpp"
 #include "iterator.hpp"
 #include "utility.hpp"
@@ -37,6 +38,11 @@ public:
     unordered_map() : unordered_map(size_type(16)) {}
     unordered_map(size_type bucket_count)
         : _bucket_count(bucket_count), _buckets(new node_type *[bucket_count] {}) {}
+
+    ~unordered_map() {
+        clear();
+        delete[] _buckets;
+    }
 
     // Capacity.
     bool empty() const noexcept { return _element_count == 0; }
@@ -119,6 +125,18 @@ public:
         }
 
         return {iterator(node), true};
+    }
+
+    void clear() noexcept {
+        mystd::fill(_buckets, _buckets + _bucket_count, nullptr);
+
+        for (node_type *cur = _before_begin.next, *next; cur; cur = next) {
+            next = cur->next;
+            delete cur;
+        }
+
+        _before_begin.next = nullptr;
+        _element_count = 0;
     }
 
     // Iterators.

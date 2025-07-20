@@ -90,3 +90,25 @@ TEST(UnorderedMap, AutoRehash) {
     }
     EXPECT_EQ(sum, 6);
 }
+
+TEST(UnorderedMap, Clear) {
+    mystd::unordered_map<const char *, int> map;
+
+    map.emplace("a", 1);
+    map.emplace("b", 2);
+    map.emplace("c", 3);
+    EXPECT_EQ(map.size(), 3);
+
+    map.clear();
+    EXPECT_EQ(map.size(), 0);
+    EXPECT_EQ(map.begin().node(), nullptr);
+
+    map.emplace("a", 1);
+    map.emplace("b", 2);
+    map.emplace("c", 3);
+    int sum{};
+    for (const auto &[k, v] : map) {
+        sum += v;
+    }
+    EXPECT_EQ(sum, 6);
+}
