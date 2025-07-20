@@ -4,6 +4,7 @@
   packages = with pkgs; [
     valgrind
     clang-tools
+    gdb
 
     alejandra
     statix
@@ -37,6 +38,14 @@
         valgrind --leak-check=full --show-leak-kinds=all \
           --trace-children=yes --track-origins=yes \
           build/tests $FILTER
+      }
+    '';
+
+    dt.exec = ''
+      cmake --build build --target tests && {
+        FILTER=""
+        [ -n "$1" ] && FILTER="--gtest_filter=*$1*"
+        gdb --args build/tests $FILTER
       }
     '';
   };
