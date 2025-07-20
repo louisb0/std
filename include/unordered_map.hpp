@@ -4,6 +4,8 @@
 #include "iterator.hpp"
 #include "utility.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <functional>
 #include <stdexcept>
 #include <utility>
@@ -28,6 +30,7 @@ private:
     node_type _before_begin{};
     node_type **_buckets{};
 
+    float _max_load_factor = 0.75;
     Hash _hasher{};
 
 public:
@@ -42,9 +45,8 @@ public:
 
     // Access.
     iterator find(const key_type &key) noexcept {
-        size_type bucket = _hasher(key) % bucket_count();
-
-        for (auto it = begin(bucket); it != end(bucket); ++it) {
+        size_type bkt = bucket(key);
+        for (auto it = begin(bkt); it != end(bkt); ++it) {
             if (it->first == key) {
                 return iterator(it.node());
             }
@@ -54,7 +56,7 @@ public:
     }
 
     const_iterator find(const key_type &key) const noexcept {
-        return iterator(static_cast<unordered_map *>(this)->find(key).node());
+        return const_iterator(const_cast<unordered_map *>(this)->find(key).node());
     }
 
     mapped_type &at(const key_type &key) {
@@ -68,17 +70,17 @@ public:
     }
 
     const mapped_type &at(const key_type &key) const {
-        return static_cast<unordered_map *>(*this)->at(key);
+        return const_cast<unordered_map *>(this)->at(key);
     }
 
     mapped_type &operator[](const key_type &key) noexcept {
-        node_type *node = find(key).node();
-        if (node) {
-            return node->data.second;
+        auto it = find(key);
+        if (it != end()) {
+            return it->second;
         }
 
-        auto [it, _] = emplace(key, mapped_type{});
-        return it->second;
+        auto [inserted, _] = emplace(key, mapped_type{});
+        return inserted->second;
     }
 
     bool contains(const key_type &key) const noexcept { return find(key) != end(); }
@@ -98,7 +100,7 @@ public:
         node_type *node = new node_type{.hash = hash, .data = std::move(data)};
 
         if (_buckets[bucket]) {
-            node->next = _buckets[bucket];
+            node->next = _buckets[bucket]->next;
             _buckets[bucket]->next = node;
         } else {
             node->next = _before_begin.next;
@@ -112,6 +114,10 @@ public:
         }
 
         _element_count++;
+        if (load_factor() > max_load_factor()) {
+            rehash(2 * size());
+        }
+
         return {iterator(node), true};
     }
 
@@ -148,6 +154,43 @@ public:
     const_local_iterator end(size_type bucket) const noexcept { return cend(bucket); }
     const_local_iterator cend(size_type bucket) const noexcept {
         return const_local_iterator(nullptr, bucket, _bucket_count);
+    }
+
+    // Policy.
+    float load_factor() const noexcept { return size() / bucket_count(); }
+    float max_load_factor() const noexcept { return _max_load_factor; }
+    void max_load_factor(float ml) noexcept { _max_load_factor = ml; }
+    void rehash(size_type count) {
+        size_type new_bucket_count =
+            std::max(count, static_cast<size_type>(std::ceil(size() / _max_load_factor)));
+        node_type **new_buckets = new node_type *[new_bucket_count] {};
+
+        node_type *cur = _before_begin.next;
+        _before_begin.next = nullptr;
+
+        for (node_type *next; cur; cur = next) {
+            next = cur->next;
+
+            size_type bucket = cur->hash % new_bucket_count;
+
+            if (new_buckets[bucket]) {
+                cur->next = new_buckets[bucket]->next;
+                new_buckets[bucket]->next = cur;
+            } else {
+                cur->next = _before_begin.next;
+                _before_begin.next = cur;
+
+                if (cur->next) {
+                    new_buckets[cur->next->hash % new_bucket_count] = cur;
+                }
+
+                new_buckets[bucket] = &_before_begin;
+            }
+        }
+
+        delete[] _buckets;
+        _buckets = new_buckets;
+        _bucket_count = new_bucket_count;
     }
 };
 

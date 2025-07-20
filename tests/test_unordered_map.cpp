@@ -1,5 +1,6 @@
 #include "unordered_map.hpp"
 
+#include <cstddef>
 #include <gtest/gtest.h>
 #include <stdexcept>
 
@@ -54,4 +55,38 @@ TEST(UnorderedMap, SubscriptOperator) {
 
     map["b"] = 1;
     EXPECT_EQ(map["b"], 1);
+}
+
+TEST(UnorderedMap, Rehash) {
+    mystd::unordered_map<const char *, int> map;
+    map.emplace("a", 1);
+    map.emplace("b", 2);
+
+    map.rehash(20);
+    EXPECT_EQ(map.size(), 2);
+    EXPECT_EQ(map.bucket_count(), 20);
+
+    int sum{};
+    for (const auto &[k, v] : map) {
+        sum += v;
+    }
+    EXPECT_EQ(sum, 3);
+}
+
+TEST(UnorderedMap, AutoRehash) {
+    mystd::unordered_map<const char *, int> map(2);
+    EXPECT_EQ(map.bucket_count(), 2);
+
+    map.emplace("a", 1);
+    map.emplace("b", 2);
+    map.emplace("c", 3);
+
+    EXPECT_EQ(map.size(), 3);
+    EXPECT_EQ(map.bucket_count(), 4);
+
+    int sum{};
+    for (const auto &[k, v] : map) {
+        sum += v;
+    }
+    EXPECT_EQ(sum, 6);
 }
