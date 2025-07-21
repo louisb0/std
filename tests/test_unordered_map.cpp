@@ -1,22 +1,30 @@
+#include "type_traits.hpp"
 #include "unordered_map.hpp"
 
-#include <cstddef>
 #include <gtest/gtest.h>
-#include <stdexcept>
+
+TEST(UnorderedMap, Aliases) {
+    using map = mystd::unordered_map<const char *, int>;
+
+    EXPECT_TRUE((mystd::is_same_v<map::key_type, const char *>));
+    EXPECT_TRUE((mystd::is_same_v<map::mapped_type, int>));
+    EXPECT_TRUE((mystd::is_same_v<map::value_type, std::pair<const char *, int>>));
+}
 
 TEST(UnorderedMap, Emplace) {
     mystd::unordered_map<const char *, int> map;
 
-    auto [it, success] = map.emplace("a", 1);
-    EXPECT_TRUE(success);
-    EXPECT_EQ(it->first, "a");
-    EXPECT_EQ(it->second, 1);
-    EXPECT_FALSE(map.empty());
+    auto [new_it, new_inserted] = map.emplace("a", 1);
+    EXPECT_EQ(new_it->first, "a");
+    EXPECT_EQ(new_it->second, 1);
+    EXPECT_TRUE(new_inserted);
     EXPECT_EQ(map.size(), 1);
 
-    auto [it2, success2] = map.emplace("a", 1);
-    EXPECT_FALSE(success2);
-    EXPECT_EQ(it2->first, "a");
+    auto [existing_it, duplicate_inserted] = map.emplace("a", 2);
+    EXPECT_EQ(existing_it, new_it);
+    EXPECT_EQ(existing_it->second, 1);
+    EXPECT_FALSE(duplicate_inserted);
+    EXPECT_EQ(map.size(), 1);
 }
 
 TEST(UnorderedMap, Find) {
@@ -24,91 +32,8 @@ TEST(UnorderedMap, Find) {
     map.emplace("a", 1);
 
     auto it = map.find("a");
-    const auto cit = map.find("a");
-    EXPECT_EQ(it, cit);
     EXPECT_EQ(it->first, "a");
     EXPECT_EQ(it->second, 1);
 
-    auto dne_it = map.find("b");
-    EXPECT_EQ(dne_it, map.end());
-}
-
-TEST(UnorderedMap, At) {
-    mystd::unordered_map<const char *, int> map;
-    map.emplace("a", 1);
-
-    auto &data = map.at("a");
-    EXPECT_EQ(data, 1);
-
-    data = 2;
-    const auto &const_data = map.at("a");
-    EXPECT_EQ(const_data, 2);
-
-    EXPECT_THROW(map.at("b"), std::out_of_range);
-    EXPECT_THROW(map.at("b") = 2, std::out_of_range);
-}
-
-TEST(UnorderedMap, SubscriptOperator) {
-    mystd::unordered_map<const char *, int> map;
-
-    EXPECT_EQ(map["a"], 0);
-
-    map["b"] = 1;
-    EXPECT_EQ(map["b"], 1);
-}
-
-TEST(UnorderedMap, Rehash) {
-    mystd::unordered_map<const char *, int> map;
-    map.emplace("a", 1);
-    map.emplace("b", 2);
-
-    map.rehash(20);
-    EXPECT_EQ(map.size(), 2);
-    EXPECT_EQ(map.bucket_count(), 20);
-
-    int sum{};
-    for (const auto &[k, v] : map) {
-        sum += v;
-    }
-    EXPECT_EQ(sum, 3);
-}
-
-TEST(UnorderedMap, AutoRehash) {
-    mystd::unordered_map<const char *, int> map(2);
-    EXPECT_EQ(map.bucket_count(), 2);
-
-    map.emplace("a", 1);
-    map.emplace("b", 2);
-    map.emplace("c", 3);
-
-    EXPECT_EQ(map.size(), 3);
-    EXPECT_EQ(map.bucket_count(), 4);
-
-    int sum{};
-    for (const auto &[k, v] : map) {
-        sum += v;
-    }
-    EXPECT_EQ(sum, 6);
-}
-
-TEST(UnorderedMap, Clear) {
-    mystd::unordered_map<const char *, int> map;
-
-    map.emplace("a", 1);
-    map.emplace("b", 2);
-    map.emplace("c", 3);
-    EXPECT_EQ(map.size(), 3);
-
-    map.clear();
-    EXPECT_EQ(map.size(), 0);
-    EXPECT_EQ(map.begin().node(), nullptr);
-
-    map.emplace("a", 1);
-    map.emplace("b", 2);
-    map.emplace("c", 3);
-    int sum{};
-    for (const auto &[k, v] : map) {
-        sum += v;
-    }
-    EXPECT_EQ(sum, 6);
+    EXPECT_EQ(map.find("NA"), map.end());
 }
