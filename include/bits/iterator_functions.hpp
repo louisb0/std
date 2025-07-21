@@ -45,7 +45,7 @@ void advance(I &it, typename mystd::iterator_traits<I>::difference_type n) {
 
 template <mystd::input_iterator I>
 I next(I it, typename mystd::iterator_traits<I>::difference_type n = 1) {
-    advance(it, 1);
+    mystd::advance(it, n);
     return it;
 }
 
