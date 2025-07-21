@@ -58,7 +58,7 @@ public:
     const_iterator cbegin() const noexcept { return begin(); }
 
     iterator end() noexcept { return iterator(nullptr); }
-    const_iterator end() const noexcept { return iterator(nullptr); }
+    const_iterator end() const noexcept { return const_iterator(nullptr); }
     const_iterator cend() const noexcept { return end(); }
 
     // Capacity.
@@ -116,6 +116,18 @@ public:
 
     const_iterator find(const key_type &key) const noexcept {
         return const_iterator(const_cast<hashtable *>(this)->find(key));
+    }
+
+    size_type count(const key_type &key) const noexcept {
+        if constexpr (Unique) {
+            return find(key) != end() ? 1 : 0;
+        } else {
+            size_type matches = 0;
+            for (auto it = find(key); it != end() && _extract_key(*it) == key; ++it) {
+                ++matches;
+            }
+            return matches;
+        }
     }
 
     // Buckets.

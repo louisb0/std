@@ -9,13 +9,12 @@
 
 namespace mystd {
 
-template <typename K, typename V, typename Hash = std::hash<K>> class unordered_map {
-    using _hashtable = detail::hashtable<std::pair<K, V>, detail::key_extractor_first, Hash, true>;
+template <typename K, typename Hash = std::hash<K>> class unordered_multiset {
+    using _hashtable = detail::hashtable<K, detail::key_extractor_identity, Hash, false>;
     _hashtable _table;
 
 public:
     using key_type = typename _hashtable::key_type;
-    using mapped_type = V;
     using value_type = typename _hashtable::value_type;
     using size_type = typename _hashtable::size_type;
     using iterator = typename _hashtable::iterator;
@@ -23,8 +22,8 @@ public:
     using local_iterator = typename _hashtable::local_iterator;
     using const_local_iterator = typename _hashtable::const_local_iterator;
 
-    unordered_map() = default;
-    unordered_map(size_type count) : _table(count) {}
+    unordered_multiset() = default;
+    unordered_multiset(size_type count) : _table(count) {}
 
     // Iterators.
     iterator begin() noexcept { return _table.begin(); }
@@ -41,7 +40,7 @@ public:
     size_type max_size() const noexcept { return _table.max_size(); }
 
     // Modifiers.
-    template <typename... Args> std::pair<iterator, bool> emplace(Args &&...args) {
+    template <typename... Args> iterator emplace(Args &&...args) {
         return _table.emplace(mystd::forward<Args>(args)...);
     }
 

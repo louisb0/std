@@ -2,9 +2,9 @@
 
 #include "bits/hashtable.hpp"
 #include "bits/hashtable_node.hpp"
+
 #include "utility.hpp"
 
-#include <functional>
 #include <utility>
 
 namespace mystd {
@@ -49,6 +49,8 @@ public:
     // Lookup.
     iterator find(const key_type &key) noexcept { return _table.find(key); }
     const_iterator find(const key_type &key) const noexcept { return _table.find(key); }
+
+    size_type count(const key_type &key) const noexcept { return _table.count(key); }
 
     // Buckets.
     local_iterator begin(size_type bucket) noexcept { return _table.begin(bucket); }
