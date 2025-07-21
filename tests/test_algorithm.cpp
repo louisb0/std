@@ -80,3 +80,12 @@ TEST(Algorithm, SwapRanges) {
         EXPECT_EQ(d1[i], i + 1);
     }
 }
+
+TEST(Algorithm, Find) {
+    int data[5]{1, 2, 3, 4, 5};
+    auto pred = [](int x) { return x > 3; };
+
+    EXPECT_EQ(mystd::find(data, data + 5, 3), data + 2);
+    EXPECT_EQ(mystd::find_if(data, data + 5, pred), data + 3);
+    EXPECT_EQ(mystd::find_if_not(data, data + 5, pred), data);
+}

@@ -2,6 +2,7 @@
 
 #include "bits/iterator_concepts.hpp"
 #include "utility.hpp"
+#include <concepts>
 
 namespace mystd {
 
@@ -47,6 +48,38 @@ I2 swap_ranges(I1 first, I1 last, I2 d_first) {
     }
 
     return d_first;
+}
+
+template <mystd::input_iterator I, typename T> I find(I first, I last, const T &value) {
+    for (; first != last; ++first) {
+        if (*first == value) {
+            return first;
+        }
+    }
+
+    return last;
+}
+
+template <mystd::input_iterator I, std::predicate<typename mystd::iterator_traits<I>::value_type> P>
+I find_if(I first, I last, P p) {
+    for (; first != last; ++first) {
+        if (p(*first)) {
+            return first;
+        }
+    }
+
+    return last;
+}
+
+template <mystd::input_iterator I, std::predicate<typename mystd::iterator_traits<I>::value_type> P>
+I find_if_not(I first, I last, P p) {
+    for (; first != last; ++first) {
+        if (!p(*first)) {
+            return first;
+        }
+    }
+
+    return last;
 }
 
 } // namespace mystd
