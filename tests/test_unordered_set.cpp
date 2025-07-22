@@ -34,6 +34,15 @@ TEST(UnorderedSet, Find) {
     EXPECT_EQ(set.find(2), set.end());
 }
 
+TEST(UnorderedSet, EqualRange) {
+    mystd::unordered_set<int> set;
+    set.emplace(1);
+
+    auto [first, last] = set.equal_range(1);
+    EXPECT_EQ(first, set.find(1));
+    EXPECT_EQ(last, set.end());
+}
+
 TEST(UnorderedSet, Count) {
     mystd::unordered_set<int> set;
     set.emplace(1);

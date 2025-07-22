@@ -33,6 +33,24 @@ TEST(UnorderedMultiSet, Find) {
     EXPECT_EQ(set.find(2), set.end());
 }
 
+TEST(UnorderedMultiSet, EqualRange) {
+    struct FirstBucketHash {
+        size_t operator()(int) const noexcept { return 0; }
+    };
+    mystd::unordered_multiset<int, FirstBucketHash> set;
+    set.emplace(1);
+    set.emplace(2);
+    set.emplace(2);
+    set.emplace(2);
+    set.emplace(3);
+
+    auto [first, last] = set.equal_range(2);
+    EXPECT_EQ(mystd::distance(first, last), 3);
+
+    for (auto it = first; it != last; ++it) {
+        EXPECT_EQ(*it, 2);
+    }
+}
 TEST(UnorderedMultiSet, Count) {
     mystd::unordered_multiset<int> set;
     set.emplace(1);

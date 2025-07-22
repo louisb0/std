@@ -2,6 +2,7 @@
 
 #include "algorithm.hpp"
 #include "bits/hashtable_node.hpp"
+#include "bits/iterator_functions.hpp"
 #include "utility.hpp"
 
 #include <limits>
@@ -40,7 +41,7 @@ private:
     _node_type _before_begin{};
     _node_type **_buckets{};
 
-    Hash _hash;
+    Hash _hash{};
     KeyExtractor _extract_key{};
 
 public:
@@ -128,6 +129,28 @@ public:
             }
             return matches;
         }
+    }
+
+    std::pair<iterator, iterator> equal_range(const key_type &key) noexcept {
+        if constexpr (Unique) {
+            auto first = find(key);
+            auto second = (first == end()) ? end() : mystd::next(first);
+
+            return {first, second};
+        } else {
+            size_type bucket = _hash(key) % _bucket_count;
+            auto pred = [&](const auto &elem) { return _extract_key(elem) == key; };
+
+            auto first = mystd::find_if(begin(bucket), end(bucket), pred);
+            auto last = mystd::find_if_not(first, end(bucket), pred);
+
+            return {iterator(first.node()), iterator(last.node())};
+        }
+    }
+
+    std::pair<const_iterator, const_iterator> equal_range(const key_type &key) const noexcept {
+        auto [first, last] = const_cast<hashtable *>(this)->equal_range(key);
+        return {const_iterator(first), const_iterator(last)};
     }
 
     // Buckets.

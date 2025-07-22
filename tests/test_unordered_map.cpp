@@ -38,6 +38,15 @@ TEST(UnorderedMap, Find) {
     EXPECT_EQ(map.find("NA"), map.end());
 }
 
+TEST(UnorderedMap, EqualRange) {
+    mystd::unordered_map<const char *, int> map;
+    map.emplace("a", 1);
+
+    auto [first, last] = map.equal_range("a");
+    EXPECT_EQ(first, map.find("a"));
+    EXPECT_EQ(last, map.end());
+}
+
 TEST(UnorderedMap, Count) {
     mystd::unordered_map<const char *, int> map;
     map.emplace("a", 1);

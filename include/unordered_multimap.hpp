@@ -53,6 +53,13 @@ public:
 
     size_type count(const key_type &key) const noexcept { return _table.count(key); }
 
+    std::pair<iterator, iterator> equal_range(const key_type &key) noexcept {
+        return _table.equal_range(key);
+    }
+    std::pair<const_iterator, const_iterator> equal_range(const key_type &key) const noexcept {
+        return _table.equal_range(key);
+    }
+
     // Buckets.
     local_iterator begin(size_type bucket) noexcept { return _table.begin(bucket); }
     const_local_iterator begin(size_type bucket) const noexcept { return _table.begin(bucket); }

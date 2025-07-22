@@ -37,6 +37,24 @@ TEST(UnorderedMultiMap, Find) {
     EXPECT_EQ(map.find("NA"), map.end());
 }
 
+TEST(UnorderedMultiMap, EqualRange) {
+    struct FirstBucketHash {
+        size_t operator()(const char *) const noexcept { return 0; }
+    };
+    mystd::unordered_multimap<const char *, int, FirstBucketHash> map;
+    map.emplace("a", 1);
+    map.emplace("b", 2);
+    map.emplace("b", 3);
+    map.emplace("b", 4);
+    map.emplace("c", 5);
+
+    auto [first, last] = map.equal_range("b");
+    EXPECT_EQ(mystd::distance(first, last), 3);
+
+    for (auto it = first; it != last; ++it) {
+        EXPECT_EQ(it->first, "b");
+    }
+}
 TEST(UnorderedMultiMap, Count) {
     mystd::unordered_multimap<const char *, int> map;
     map.emplace("a", 1);
