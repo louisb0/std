@@ -1,5 +1,7 @@
 #include "type_traits.hpp"
 #include "unordered_multiset.hpp"
+#include "unordered_set.hpp"
+#include "vector.hpp"
 
 #include <gtest/gtest.h>
 
@@ -51,6 +53,7 @@ TEST(UnorderedMultiSet, EqualRange) {
         EXPECT_EQ(*it, 2);
     }
 }
+
 TEST(UnorderedMultiSet, Count) {
     mystd::unordered_multiset<int> set;
     set.emplace(1);
@@ -58,4 +61,27 @@ TEST(UnorderedMultiSet, Count) {
 
     EXPECT_EQ(set.count(1), 2);
     EXPECT_EQ(set.count(2), 0);
+}
+
+TEST(UnorderedMultiSet, ElementOrdering) {
+    struct FirstBucketHash {
+        size_t operator()(int) const noexcept { return 0; }
+    };
+    mystd::unordered_multiset<int, FirstBucketHash> set;
+    set.emplace(1);
+    set.emplace(2);
+    set.emplace(1);
+
+    mystd::unordered_set<int> seen_and_finished;
+
+    for (auto it = set.begin(); it != set.end(); ++it) {
+        int current = *it;
+        EXPECT_EQ(seen_and_finished.count(current), 0);
+
+        auto next_it = mystd::next(it);
+        bool continues = (next_it != set.end()) && (*next_it == current);
+        if (!continues) {
+            seen_and_finished.emplace(current);
+        }
+    }
 }

@@ -123,11 +123,8 @@ public:
         if constexpr (Unique) {
             return find(key) != end() ? 1 : 0;
         } else {
-            size_type matches = 0;
-            for (auto it = find(key); it != end() && _extract_key(*it) == key; ++it) {
-                ++matches;
-            }
-            return matches;
+            auto [first, last] = equal_range(key);
+            return mystd::distance(first, last);
         }
     }
 
@@ -175,8 +172,16 @@ private:
         size_type bucket = node->hash % _bucket_count;
 
         if (_buckets[bucket]) {
-            node->next = _buckets[bucket]->next;
-            _buckets[bucket]->next = node;
+            _node_type *insert_after;
+            if constexpr (Unique) {
+                insert_after = _buckets[bucket];
+            } else {
+                auto [first, last] = equal_range(_extract_key(node->data));
+                insert_after = (first != end()) ? first.node() : _buckets[bucket];
+            }
+
+            node->next = insert_after->next;
+            insert_after->next = node;
         } else {
             node->next = _before_begin.next;
             _before_begin.next = node;

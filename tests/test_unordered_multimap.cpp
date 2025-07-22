@@ -1,5 +1,6 @@
 #include "type_traits.hpp"
 #include "unordered_multimap.hpp"
+#include "unordered_set.hpp"
 
 #include <gtest/gtest.h>
 
@@ -19,10 +20,10 @@ TEST(UnorderedMultiMap, Emplace) {
     EXPECT_EQ(first_it->second, 1);
     EXPECT_EQ(map.size(), 1);
 
-    auto second_it = map.emplace("a", 2);
+    auto second_it = map.emplace("a", 1);
     EXPECT_NE(first_it, second_it);
     EXPECT_EQ(second_it->first, "a");
-    EXPECT_EQ(second_it->second, 2);
+    EXPECT_EQ(second_it->second, 1);
     EXPECT_EQ(map.size(), 2);
 }
 
@@ -55,6 +56,7 @@ TEST(UnorderedMultiMap, EqualRange) {
         EXPECT_EQ(it->first, "b");
     }
 }
+
 TEST(UnorderedMultiMap, Count) {
     mystd::unordered_multimap<const char *, int> map;
     map.emplace("a", 1);
@@ -62,4 +64,26 @@ TEST(UnorderedMultiMap, Count) {
 
     EXPECT_EQ(map.count("a"), 2);
     EXPECT_EQ(map.count("b"), 0);
+}
+
+TEST(UnorderedMultiMap, ElementOrdering) {
+    struct FirstBucketHash {
+        size_t operator()(const char *) const noexcept { return 0; }
+    };
+    mystd::unordered_multimap<const char *, int, FirstBucketHash> map;
+    map.emplace("a", 1);
+    map.emplace("b", 2);
+    map.emplace("a", 2);
+
+    mystd::unordered_set<const char *> seen_and_finished;
+    for (auto it = map.begin(); it != map.end(); ++it) {
+        auto key = it->first;
+        EXPECT_EQ(seen_and_finished.count(key), 0);
+
+        auto next_it = mystd::next(it);
+        bool continues = (next_it != map.end()) && (next_it->first == key);
+        if (!continues) {
+            seen_and_finished.emplace(key);
+        }
+    }
 }
