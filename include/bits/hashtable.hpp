@@ -80,7 +80,7 @@ public:
 
         auto inserted = _insert_unconditional(new _node_type{
             .hash = _hash(key),
-            .data = std::move(data),
+            .data = mystd::move(data),
         });
 
         if constexpr (Unique) {
@@ -98,13 +98,13 @@ public:
             cur = next;
         }
 
-        mystd::fill(_buckets, _buckets + _bucket_count, nullptr);
+        mystd::fill(_buckets, _buckets + bucket_count(), nullptr);
         _before_begin.next = nullptr;
     }
 
     // Lookup.
     iterator find(const key_type &key) noexcept {
-        size_type bucket = _hash(key) % _bucket_count;
+        size_type bucket = this->bucket(key);
 
         for (auto it = begin(bucket); it != end(bucket); ++it) {
             if (_extract_key(*it) == key) {
@@ -135,7 +135,7 @@ public:
 
             return {first, second};
         } else {
-            size_type bucket = _hash(key) % _bucket_count;
+            size_type bucket = this->bucket(key);
             auto pred = [&](const auto &elem) { return _extract_key(elem) == key; };
 
             auto first = mystd::find_if(begin(bucket), end(bucket), pred);
@@ -152,24 +152,32 @@ public:
 
     // Buckets.
     local_iterator begin(size_type bucket) noexcept {
-        return local_iterator(_bucket_begin(bucket), bucket, _bucket_count);
+        return local_iterator(_bucket_begin(bucket), bucket, bucket_count());
     }
     const_local_iterator begin(size_type bucket) const noexcept {
-        return const_local_iterator(_bucket_begin(bucket), bucket, _bucket_count);
+        return const_local_iterator(_bucket_begin(bucket), bucket, bucket_count());
     }
     const_local_iterator cbegin(size_type bucket) const noexcept { return begin(bucket); }
 
     local_iterator end(size_type bucket) noexcept {
-        return local_iterator(nullptr, bucket, _bucket_count);
+        return local_iterator(nullptr, bucket, bucket_count());
     }
     const_local_iterator end(size_type bucket) const noexcept {
-        return const_local_iterator(nullptr, bucket, _bucket_count);
+        return const_local_iterator(nullptr, bucket, bucket_count());
     }
     const_local_iterator cend(size_type bucket) const noexcept { return end(bucket); }
 
+    // TODO: Add basic test to common hashtable test in future refactor.
+    size_type bucket_count() const noexcept { return _bucket_count; }
+    size_type max_bucket_count() const noexcept { return std::numeric_limits<size_type>::max(); }
+    size_type bucket(const key_type &key) const noexcept { return _hash(key) % bucket_count(); }
+    size_type bucket_size(size_type bucket) const noexcept {
+        return mystd::distance(begin(bucket), end(bucket));
+    }
+
 private:
     iterator _insert_unconditional(_node_type *node) noexcept {
-        size_type bucket = node->hash % _bucket_count;
+        size_type bucket = node->hash % bucket_count();
 
         if (_buckets[bucket]) {
             _node_type *insert_after;
@@ -187,7 +195,7 @@ private:
             _before_begin.next = node;
 
             if (node->next) {
-                _buckets[node->next->hash % _bucket_count] = node;
+                _buckets[node->next->hash % bucket_count()] = node;
             }
             _buckets[bucket] = &_before_begin;
         }

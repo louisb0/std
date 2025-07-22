@@ -67,6 +67,11 @@ public:
     local_iterator end(size_type bucket) noexcept { return _table.end(bucket); }
     const_local_iterator end(size_type bucket) const noexcept { return _table.end(bucket); }
     const_local_iterator cend(size_type bucket) const noexcept { return _table.cend(bucket); }
+
+    size_type bucket_count() const noexcept { return _table.bucket_count(); }
+    size_type max_bucket_count() const noexcept { return _table.max_bucket_count(); }
+    size_type bucket(const key_type &key) const noexcept { return _table.bucket(key); }
+    size_type bucket_size(size_type bucket) const noexcept { return _table.bucket_size(bucket); }
 };
 
 } // namespace mystd
