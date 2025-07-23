@@ -1,19 +1,21 @@
 #include "type_traits.hpp"
 #include "unordered_multimap.hpp"
-#include "unordered_set.hpp"
 
 #include <gtest/gtest.h>
 
-TEST(UnorderedMultiMap, Aliases) {
-    using map = mystd::unordered_multimap<const char *, int>;
+// NOTE: These are smoke tests for the wrapper around detail::hashtable - see
+// tests/hashtable/test_table.cpp.
 
-    EXPECT_TRUE((mystd::is_same_v<map::key_type, const char *>));
-    EXPECT_TRUE((mystd::is_same_v<map::mapped_type, int>));
-    EXPECT_TRUE((mystd::is_same_v<map::value_type, std::pair<const char *, int>>));
+using unordered_multimap = mystd::unordered_multimap<const char *, int>;
+
+TEST(UnorderedMultiMap, Aliases) {
+    EXPECT_TRUE((mystd::is_same_v<unordered_multimap::key_type, const char *>));
+    EXPECT_TRUE((mystd::is_same_v<unordered_multimap::mapped_type, int>));
+    EXPECT_TRUE((mystd::is_same_v<unordered_multimap::value_type, std::pair<const char *, int>>));
 }
 
 TEST(UnorderedMultiMap, Emplace) {
-    mystd::unordered_multimap<const char *, int> map;
+    unordered_multimap map;
 
     auto first_it = map.emplace("a", 1);
     EXPECT_EQ(first_it->first, "a");
@@ -22,13 +24,11 @@ TEST(UnorderedMultiMap, Emplace) {
 
     auto second_it = map.emplace("a", 1);
     EXPECT_NE(first_it, second_it);
-    EXPECT_EQ(second_it->first, "a");
-    EXPECT_EQ(second_it->second, 1);
     EXPECT_EQ(map.size(), 2);
 }
 
 TEST(UnorderedMultiMap, Find) {
-    mystd::unordered_multimap<const char *, int> map;
+    unordered_multimap map;
     map.emplace("a", 1);
 
     auto it = map.find("a");
@@ -39,51 +39,20 @@ TEST(UnorderedMultiMap, Find) {
 }
 
 TEST(UnorderedMultiMap, EqualRange) {
-    struct FirstBucketHash {
-        size_t operator()(const char *) const noexcept { return 0; }
-    };
-    mystd::unordered_multimap<const char *, int, FirstBucketHash> map;
-    map.emplace("a", 1);
+    unordered_multimap map;
+    map.emplace("b", 1);
     map.emplace("b", 2);
     map.emplace("b", 3);
-    map.emplace("b", 4);
-    map.emplace("c", 5);
 
     auto [first, last] = map.equal_range("b");
     EXPECT_EQ(mystd::distance(first, last), 3);
-
-    for (auto it = first; it != last; ++it) {
-        EXPECT_EQ(it->first, "b");
-    }
 }
 
 TEST(UnorderedMultiMap, Count) {
-    mystd::unordered_multimap<const char *, int> map;
+    unordered_multimap map;
     map.emplace("a", 1);
     map.emplace("a", 1);
 
     EXPECT_EQ(map.count("a"), 2);
     EXPECT_EQ(map.count("b"), 0);
-}
-
-TEST(UnorderedMultiMap, ElementOrdering) {
-    struct FirstBucketHash {
-        size_t operator()(const char *) const noexcept { return 0; }
-    };
-    mystd::unordered_multimap<const char *, int, FirstBucketHash> map;
-    map.emplace("a", 1);
-    map.emplace("b", 2);
-    map.emplace("a", 2);
-
-    mystd::unordered_set<const char *> seen_and_finished;
-    for (auto it = map.begin(); it != map.end(); ++it) {
-        auto key = it->first;
-        EXPECT_EQ(seen_and_finished.count(key), 0);
-
-        auto next_it = mystd::next(it);
-        bool continues = (next_it != map.end()) && (next_it->first == key);
-        if (!continues) {
-            seen_and_finished.emplace(key);
-        }
-    }
 }

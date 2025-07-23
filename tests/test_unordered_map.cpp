@@ -3,32 +3,29 @@
 
 #include <gtest/gtest.h>
 
-TEST(UnorderedMap, Aliases) {
-    using map = mystd::unordered_map<const char *, int>;
+// NOTE: These are smoke tests for the wrapper around detail::hashtable - see
+// tests/hashtable/test_table.cpp.
 
-    EXPECT_TRUE((mystd::is_same_v<map::key_type, const char *>));
-    EXPECT_TRUE((mystd::is_same_v<map::mapped_type, int>));
-    EXPECT_TRUE((mystd::is_same_v<map::value_type, std::pair<const char *, int>>));
+using unordered_map = mystd::unordered_map<const char *, int>;
+
+TEST(UnorderedMap, Aliases) {
+    EXPECT_TRUE((mystd::is_same_v<unordered_map::key_type, const char *>));
+    EXPECT_TRUE((mystd::is_same_v<unordered_map::mapped_type, int>));
+    EXPECT_TRUE((mystd::is_same_v<unordered_map::value_type, std::pair<const char *, int>>));
 }
 
 TEST(UnorderedMap, Emplace) {
-    mystd::unordered_map<const char *, int> map;
+    unordered_map map;
 
-    auto [new_it, new_inserted] = map.emplace("a", 1);
-    EXPECT_EQ(new_it->first, "a");
-    EXPECT_EQ(new_it->second, 1);
-    EXPECT_TRUE(new_inserted);
-    EXPECT_EQ(map.size(), 1);
-
-    auto [existing_it, duplicate_inserted] = map.emplace("a", 2);
-    EXPECT_EQ(existing_it, new_it);
-    EXPECT_EQ(existing_it->second, 1);
-    EXPECT_FALSE(duplicate_inserted);
+    auto [it, inserted] = map.emplace("a", 1);
+    EXPECT_EQ(it->first, "a");
+    EXPECT_EQ(it->second, 1);
+    EXPECT_TRUE(inserted);
     EXPECT_EQ(map.size(), 1);
 }
 
 TEST(UnorderedMap, Find) {
-    mystd::unordered_map<const char *, int> map;
+    unordered_map map;
     map.emplace("a", 1);
 
     auto it = map.find("a");
@@ -39,7 +36,7 @@ TEST(UnorderedMap, Find) {
 }
 
 TEST(UnorderedMap, EqualRange) {
-    mystd::unordered_map<const char *, int> map;
+    unordered_map map;
     map.emplace("a", 1);
 
     auto [first, last] = map.equal_range("a");
@@ -48,9 +45,8 @@ TEST(UnorderedMap, EqualRange) {
 }
 
 TEST(UnorderedMap, Count) {
-    mystd::unordered_map<const char *, int> map;
-    map.emplace("a", 1);
+    unordered_map map;
 
+    map.emplace("a", 1);
     EXPECT_EQ(map.count("a"), 1);
-    EXPECT_EQ(map.count("b"), 0);
 }

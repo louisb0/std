@@ -3,12 +3,12 @@
 
 #include <gtest/gtest.h>
 
-TEST(Node, IteratorConcept) {
+TEST(HashtableNode, IteratorConcept) {
     EXPECT_TRUE((mystd::forward_iterator<mystd::detail::node_iterator<int, false>>));
     EXPECT_TRUE((mystd::forward_iterator<mystd::detail::node_iterator<int, true>>));
 }
 
-TEST(Node, IteratorConstruction) {
+TEST(HashtableNode, IteratorConstruction) {
     mystd::detail::node<int> n{.data = 5};
 
     mystd::detail::node_iterator<int> it(&n);
@@ -17,7 +17,7 @@ TEST(Node, IteratorConstruction) {
     EXPECT_EQ(*it, *cit);
 }
 
-TEST(Node, IteratorTraversal) {
+TEST(HashtableNode, IteratorTraversal) {
     struct Wrapper {
         int v{};
     };
@@ -38,12 +38,12 @@ TEST(Node, IteratorTraversal) {
     EXPECT_EQ(++it, end);
 }
 
-TEST(Node, LocalIteratorConcept) {
+TEST(HashtableNode, LocalIteratorConcept) {
     EXPECT_TRUE((mystd::forward_iterator<mystd::detail::local_node_iterator<int, false>>));
     EXPECT_TRUE((mystd::forward_iterator<mystd::detail::local_node_iterator<int, true>>));
 }
 
-TEST(Node, LocalIteratorConstruction) {
+TEST(HashtableNode, LocalIteratorConstruction) {
     mystd::detail::node<int> n{.data = 5};
 
     mystd::detail::local_node_iterator<int> it(&n, 1, 1);
@@ -52,7 +52,7 @@ TEST(Node, LocalIteratorConstruction) {
     EXPECT_EQ(*it, *cit);
 }
 
-TEST(Node, LocalIteratorTraversal) {
+TEST(HashtableNode, LocalIteratorTraversal) {
     struct Wrapper {
         int v{};
     };
