@@ -1,7 +1,6 @@
 #pragma once
 
 #include "bits/hashtable.hpp"
-#include "bits/hashtable_node.hpp"
 
 #include "utility.hpp"
 
@@ -73,6 +72,13 @@ public:
     size_type max_bucket_count() const noexcept { return _table.max_bucket_count(); }
     size_type bucket(const key_type &key) const noexcept { return _table.bucket(key); }
     size_type bucket_size(size_type bucket) const noexcept { return _table.bucket_size(bucket); }
+
+    // Hashing.
+    float load_factor() const noexcept { return _table.load_factor(); }
+    float max_load_factor() const noexcept { return _table.max_load_factor(); }
+    void max_load_factor(float ml) noexcept { _table.max_load_factor(ml); }
+    void rehash(size_type count) { _table.rehash(count); }
+    void reserve(size_type count) { _table.reserve(count); }
 };
 
 } // namespace mystd

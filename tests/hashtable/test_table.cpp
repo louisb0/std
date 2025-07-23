@@ -1,7 +1,6 @@
 #include "bits/hashtable.hpp"
 
 #include <gtest/gtest.h>
-#include <numeric>
 #include <unordered_set>
 #include <utility>
 
@@ -135,5 +134,26 @@ TEST(Hashtable, CommonBuckets) {
     for (const auto &[_, v] : cmt) {
         sum += v;
     }
+    EXPECT_EQ(sum, 1 + 2 + 3);
+}
+
+// NOTE: For an explanation on why there is no Unique-Multi special case, see the note in
+// detail::hashtable::rehash().
+TEST(Hashtable, CommonRehash) {
+    unique_table ut(2);
+    EXPECT_EQ(ut.bucket_count(), 2);
+
+    ut.emplace("a", 1);
+    ut.emplace("b", 2);
+    ut.emplace("c", 3);
+    EXPECT_NE(ut.bucket_count(), 2);
+
+    std::unordered_set<const char *> seen;
+    size_t sum{};
+    for (const auto &[k, v] : ut) {
+        seen.insert(k);
+        sum += v;
+    }
+    EXPECT_EQ(seen.size(), 3);
     EXPECT_EQ(sum, 1 + 2 + 3);
 }

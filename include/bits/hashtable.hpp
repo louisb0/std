@@ -5,6 +5,8 @@
 #include "bits/iterator_functions.hpp"
 #include "utility.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <limits>
 #include <type_traits>
 #include <utility>
@@ -40,6 +42,7 @@ private:
     size_type _bucket_count{};
     _node_type _before_begin{};
     _node_type **_buckets{};
+    float _max_load_factor{0.75};
 
     Hash _hash{};
     KeyExtractor _extract_key{};
@@ -82,6 +85,10 @@ public:
             .hash = _hash(key),
             .data = mystd::move(data),
         });
+
+        if (load_factor() > max_load_factor()) {
+            rehash(2 * bucket_count());
+        }
 
         if constexpr (Unique) {
             return {inserted, true};
@@ -167,12 +174,57 @@ public:
     }
     const_local_iterator cend(size_type bucket) const noexcept { return end(bucket); }
 
-    // TODO: Add basic test to common hashtable test in future refactor.
     size_type bucket_count() const noexcept { return _bucket_count; }
     size_type max_bucket_count() const noexcept { return std::numeric_limits<size_type>::max(); }
     size_type bucket(const key_type &key) const noexcept { return _hash(key) % bucket_count(); }
     size_type bucket_size(size_type bucket) const noexcept {
         return mystd::distance(begin(bucket), end(bucket));
+    }
+
+    // Hashing.
+    float load_factor() const noexcept { return size() / bucket_count(); }
+    float max_load_factor() const noexcept { return _max_load_factor; }
+    void max_load_factor(float ml) noexcept { _max_load_factor = ml; }
+
+    void rehash(size_type count) {
+        size_type new_bucket_count =
+            std::max(count, static_cast<size_type>(std::ceil(size() / max_load_factor())));
+        _node_type **new_buckets = new _node_type *[new_bucket_count] {};
+
+        _node_type *cur = _before_begin.next;
+        _before_begin.next = nullptr;
+
+        // NOTE: It is invariant per _insert_unconditional() that elements which compare equal are
+        // stored 'contiguously' in the linked list. So, when rehashed, they too will be stored
+        // contiguous without any special casing.
+        while (cur) {
+            _node_type *next = cur->next;
+
+            size_type bucket = cur->hash % new_bucket_count;
+
+            if (new_buckets[bucket]) {
+                cur->next = new_buckets[bucket]->next;
+                new_buckets[bucket]->next = cur;
+            } else {
+                cur->next = _before_begin.next;
+                _before_begin.next = cur;
+
+                if (cur->next) {
+                    new_buckets[cur->next->hash % new_bucket_count] = cur;
+                }
+                new_buckets[bucket] = &_before_begin;
+            }
+
+            cur = next;
+        }
+
+        delete[] _buckets;
+        _buckets = new_buckets;
+        _bucket_count = new_bucket_count;
+    }
+
+    void reserve(size_type count) {
+        rehash(static_cast<size_type>(std::ceil(count / max_load_factor())));
     }
 
 private:
