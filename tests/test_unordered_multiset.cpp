@@ -1,8 +1,10 @@
 #include "type_traits.hpp"
 #include "unordered_multiset.hpp"
-#include "unordered_set.hpp"
 
 #include <gtest/gtest.h>
+
+// NOTE: These are smoke tests for the wrapper around detail::hashtable - see
+// tests/hashtable/test_table.cpp.
 
 using unordered_multiset = mystd::unordered_multiset<int>;
 
@@ -22,6 +24,16 @@ TEST(UnorderedMultiSet, Emplace) {
     EXPECT_EQ(*second_it, 1);
     EXPECT_EQ(set.size(), 2);
     EXPECT_NE(first_it, second_it);
+}
+
+TEST(UnorderedMultiSet, Insert) {
+    unordered_multiset set;
+    int val = 1;
+
+    set.insert(std::move(val));
+    set.insert(1);
+    set.insert({1, 1});
+    EXPECT_EQ(set.size(), 4);
 }
 
 TEST(UnorderedMultiSet, Find) {

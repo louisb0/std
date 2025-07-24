@@ -68,6 +68,33 @@ TEST(Hashtable, MultiEmplace) {
     }
 }
 
+TEST(Hashtable, CommonInsert) {
+    unique_table ut;
+    std::pair<const char *, int> kv{"a", 1};
+
+    ut.insert(mystd::move(kv));
+    ut.insert({"b", 1});
+    ut.insert({{"c", 1}, {"d", 1}});
+    EXPECT_EQ(ut.size(), 4);
+
+    std::unordered_set<const char *> expected_keys{"a", "b", "c", "d"};
+    for (const auto &[k, v] : ut) {
+        expected_keys.erase(k);
+    }
+    EXPECT_EQ(expected_keys.size(), 0);
+
+    // Redundant operations
+    ut.insert({"b", 1000});
+    ut.insert({{"c", 1000}, {"d", 1000}});
+    EXPECT_EQ(ut.size(), 4);
+
+    size_t sum{};
+    for (const auto &[_, v] : ut) {
+        sum += v;
+    }
+    EXPECT_EQ(sum, 4);
+}
+
 TEST(Hashtable, CommonFind) {
     unique_table ut;
     ut.emplace("a", 1);

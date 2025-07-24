@@ -2,14 +2,13 @@
 
 #include "algorithm.hpp"
 #include "bits/hashtable_node.hpp"
+#include "bits/iterator_concepts.hpp"
 #include "bits/iterator_functions.hpp"
-#include "type_traits.hpp"
 #include "utility.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -98,6 +97,16 @@ public:
             return inserted;
         }
     }
+
+    _return_type insert(const value_type &value) { return emplace(value); }
+    _return_type insert(value_type &&value) { return emplace(std::move(value)); }
+
+    template <mystd::input_iterator I> void insert(I first, I last) {
+        for (; first != last; ++first) {
+            insert(*first);
+        }
+    }
+    void insert(std::initializer_list<value_type> il) { insert(il.begin(), il.end()); }
 
     void clear() noexcept {
         _node_type *cur = _before_begin.next;

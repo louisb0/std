@@ -24,6 +24,18 @@ TEST(UnorderedMap, Emplace) {
     EXPECT_EQ(map.size(), 1);
 }
 
+TEST(UnorderedMap, Insert) {
+    unordered_map map;
+    std::pair<const char *, int> kv{"a", 1};
+
+    map.insert(std::move(kv));
+    auto [it, success] = map.insert({"a", 1});
+    EXPECT_FALSE(success);
+
+    map.insert({{"a", 1}, {"b", 1}});
+    EXPECT_EQ(map.size(), 2);
+}
+
 TEST(UnorderedMap, Find) {
     unordered_map map;
     map.emplace("a", 1);

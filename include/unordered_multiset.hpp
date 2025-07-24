@@ -43,6 +43,11 @@ public:
         return _table.emplace(mystd::forward<Args>(args)...);
     }
 
+    iterator insert(const value_type &value) { return _table.insert(value); }
+    iterator insert(value_type &&value) { return _table.insert(std::move(value)); }
+    template <mystd::input_iterator I> void insert(I first, I last) { _table.insert(first, last); }
+    void insert(std::initializer_list<value_type> il) { _table.insert(il); }
+
     void clear() noexcept { return _table.clear(); }
 
     // Lookup.

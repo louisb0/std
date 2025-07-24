@@ -3,15 +3,18 @@
 
 #include <gtest/gtest.h>
 
-TEST(UnorderedSet, Aliases) {
-    using set = mystd::unordered_set<int>;
+// NOTE: These are smoke tests for the wrapper around detail::hashtable - see
+// tests/hashtable/test_table.cpp.
 
-    EXPECT_TRUE((mystd::is_same_v<set::key_type, int>));
-    EXPECT_TRUE((mystd::is_same_v<set::value_type, int>));
+using unordered_set = mystd::unordered_set<int>;
+
+TEST(UnorderedSet, Aliases) {
+    EXPECT_TRUE((mystd::is_same_v<unordered_set::key_type, int>));
+    EXPECT_TRUE((mystd::is_same_v<unordered_set::value_type, int>));
 }
 
 TEST(UnorderedSet, Emplace) {
-    mystd::unordered_set<int> set;
+    unordered_set set;
 
     auto [new_it, new_inserted] = set.emplace(1);
     EXPECT_EQ(*new_it, 1);
@@ -24,8 +27,21 @@ TEST(UnorderedSet, Emplace) {
     EXPECT_EQ(set.size(), 1);
 }
 
+TEST(UnorderedSet, Insert) {
+    unordered_set set;
+
+    int val = 1;
+    set.insert(std::move(val));
+
+    auto [_, success] = set.insert(1);
+    EXPECT_FALSE(success);
+
+    set.insert({1, 2});
+    EXPECT_EQ(set.size(), 2);
+}
+
 TEST(UnorderedSet, Find) {
-    mystd::unordered_set<int> set;
+    unordered_set set;
     set.emplace(1);
 
     auto it = set.find(1);
@@ -35,7 +51,7 @@ TEST(UnorderedSet, Find) {
 }
 
 TEST(UnorderedSet, Contains) {
-    mystd::unordered_set<int> set;
+    unordered_set set;
     set.emplace(1);
 
     EXPECT_TRUE(set.contains(1));
@@ -43,7 +59,7 @@ TEST(UnorderedSet, Contains) {
 }
 
 TEST(UnorderedSet, EqualRange) {
-    mystd::unordered_set<int> set;
+    unordered_set set;
     set.emplace(1);
 
     auto [first, last] = set.equal_range(1);
@@ -52,7 +68,7 @@ TEST(UnorderedSet, EqualRange) {
 }
 
 TEST(UnorderedSet, Count) {
-    mystd::unordered_set<int> set;
+    unordered_set set;
     set.emplace(1);
 
     EXPECT_EQ(set.count(1), 1);

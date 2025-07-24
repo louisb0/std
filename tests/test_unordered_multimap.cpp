@@ -27,6 +27,16 @@ TEST(UnorderedMultiMap, Emplace) {
     EXPECT_EQ(map.size(), 2);
 }
 
+TEST(UnorderedMultiMap, Insert) {
+    unordered_multimap map;
+    std::pair<const char *, int> kv{"a", 1};
+
+    map.insert(std::move(kv));
+    map.insert({"a", 1});
+    map.insert({{"a", 1}, {"b", 1}});
+    EXPECT_EQ(map.size(), 4);
+}
+
 TEST(UnorderedMultiMap, Find) {
     unordered_multimap map;
     map.emplace("a", 1);
