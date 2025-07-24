@@ -34,6 +34,14 @@ TEST(UnorderedSet, Find) {
     EXPECT_EQ(set.find(2), set.end());
 }
 
+TEST(UnorderedSet, Contains) {
+    mystd::unordered_set<int> set;
+    set.emplace(1);
+
+    EXPECT_TRUE(set.contains(1));
+    EXPECT_FALSE(set.contains(2));
+}
+
 TEST(UnorderedSet, EqualRange) {
     mystd::unordered_set<int> set;
     set.emplace(1);

@@ -79,6 +79,14 @@ TEST(Hashtable, CommonFind) {
     EXPECT_EQ(ut.find("NA"), ut.end());
 }
 
+TEST(Hashtable, CommonContains) {
+    unique_table ut;
+    ut.emplace("a", 1);
+
+    EXPECT_TRUE(ut.contains("a"));
+    EXPECT_FALSE(ut.contains("b"));
+}
+
 TEST(Hashtable, UniqueEqualRange) {
     unique_table ut;
     ut.emplace("a", 1);

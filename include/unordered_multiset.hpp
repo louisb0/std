@@ -49,6 +49,8 @@ public:
     iterator find(const key_type &key) noexcept { return _table.find(key); }
     const_iterator find(const key_type &key) const noexcept { return _table.find(key); }
 
+    bool contains(const key_type &key) const noexcept { return _table.contains(key); }
+
     size_type count(const key_type &key) const noexcept { return _table.count(key); }
 
     std::pair<iterator, iterator> equal_range(const key_type &key) noexcept {

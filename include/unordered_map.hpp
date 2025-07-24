@@ -50,6 +50,8 @@ public:
     iterator find(const key_type &key) noexcept { return _table.find(key); }
     const_iterator find(const key_type &key) const noexcept { return _table.find(key); }
 
+    bool contains(const key_type &key) const noexcept { return _table.contains(key); }
+
     size_type count(const key_type &key) const noexcept { return _table.count(key); }
 
     std::pair<iterator, iterator> equal_range(const key_type &key) noexcept {
@@ -57,6 +59,30 @@ public:
     }
     std::pair<const_iterator, const_iterator> equal_range(const key_type &key) const noexcept {
         return _table.equal_range(key);
+    }
+
+    value_type::second_type &operator[](const key_type &key) {
+        auto [it, _] = emplace(key, typename value_type::second_type{});
+        return it->second;
+    }
+
+    value_type::second_type &operator[](key_type &&key) {
+        auto [it, _] = emplace(std::move(key), typename value_type::second_type{});
+        return it->second;
+    }
+
+    value_type::second_type &at(const key_type &key) {
+        auto it = find(key);
+        if (it == end()) {
+            throw std::out_of_range(
+                "mystd::detail::hashtable::at() was called with a non-existent key.");
+        }
+
+        return it->second;
+    }
+
+    value_type::second_type &at(const key_type &key) const {
+        return const_cast<unordered_map *>(this)->at(key);
     }
 
     // Buckets.

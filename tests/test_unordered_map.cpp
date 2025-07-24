@@ -35,6 +35,41 @@ TEST(UnorderedMap, Find) {
     EXPECT_EQ(map.find("NA"), map.end());
 }
 
+TEST(UnorderedMap, Contains) {
+    unordered_map map;
+    map.emplace("a", 1);
+
+    EXPECT_TRUE(map.contains("a"));
+    EXPECT_FALSE(map.contains("b"));
+}
+
+TEST(UnorderedMap, Subscript) {
+    unordered_map map;
+
+    map["a"] = 1;
+    EXPECT_EQ(map["a"], 1);
+    EXPECT_EQ(map.size(), 1);
+
+    map[std::move("a")] = 2;
+
+    auto it = map.find("a");
+    EXPECT_EQ(it->first, "a");
+    EXPECT_EQ(it->second, 2);
+}
+
+TEST(UnorderedMap, At) {
+    unordered_map map;
+
+    map["a"] = 1;
+    EXPECT_EQ(map.at("a"), 1);
+
+    map.at("a") = 2;
+    EXPECT_EQ(map.at("a"), 2);
+
+    EXPECT_THROW(map.at("b"), std::out_of_range);
+    EXPECT_THROW(map.at("b") = 100, std::out_of_range);
+}
+
 TEST(UnorderedMap, EqualRange) {
     unordered_map map;
     map.emplace("a", 1);

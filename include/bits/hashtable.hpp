@@ -3,11 +3,13 @@
 #include "algorithm.hpp"
 #include "bits/hashtable_node.hpp"
 #include "bits/iterator_functions.hpp"
+#include "type_traits.hpp"
 #include "utility.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -126,6 +128,8 @@ public:
         return const_iterator(const_cast<hashtable *>(this)->find(key));
     }
 
+    bool contains(const key_type &key) const noexcept { return find(key) != end(); }
+
     size_type count(const key_type &key) const noexcept {
         if constexpr (Unique) {
             return find(key) != end() ? 1 : 0;
@@ -159,10 +163,12 @@ public:
 
     // Buckets.
     local_iterator begin(size_type bucket) noexcept {
-        return local_iterator(_bucket_begin(bucket), bucket, bucket_count());
+        _node_type *bucket_start = _buckets[bucket] ? _buckets[bucket]->next : nullptr;
+        return local_iterator(bucket_start, bucket, bucket_count());
     }
     const_local_iterator begin(size_type bucket) const noexcept {
-        return const_local_iterator(_bucket_begin(bucket), bucket, bucket_count());
+        _node_type *bucket_start = _buckets[bucket] ? _buckets[bucket]->next : nullptr;
+        return const_local_iterator(bucket_start, bucket, bucket_count());
     }
     const_local_iterator cbegin(size_type bucket) const noexcept { return begin(bucket); }
 
@@ -254,10 +260,6 @@ private:
 
         ++_element_count;
         return iterator(node);
-    }
-
-    _node_type *_bucket_begin(size_type bucket) const noexcept {
-        return _buckets[bucket] ? _buckets[bucket]->next : nullptr;
     }
 };
 

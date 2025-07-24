@@ -38,6 +38,14 @@ TEST(UnorderedMultiMap, Find) {
     EXPECT_EQ(map.find("NA"), map.end());
 }
 
+TEST(UnorderedMultiMap, Contains) {
+    unordered_multimap map;
+    map.emplace("a", 1);
+
+    EXPECT_TRUE(map.contains("a"));
+    EXPECT_FALSE(map.contains("b"));
+}
+
 TEST(UnorderedMultiMap, EqualRange) {
     unordered_multimap map;
     map.emplace("b", 1);

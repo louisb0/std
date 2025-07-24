@@ -32,6 +32,14 @@ TEST(UnorderedMultiSet, Find) {
     EXPECT_EQ(set.find(2), set.end());
 }
 
+TEST(UnorderedMultiSet, Contains) {
+    unordered_multiset set;
+    set.emplace(1);
+
+    EXPECT_TRUE(set.contains(1));
+    EXPECT_FALSE(set.contains(2));
+}
+
 TEST(UnorderedMultiSet, EqualRange) {
     unordered_multiset set;
     set.emplace(1);
