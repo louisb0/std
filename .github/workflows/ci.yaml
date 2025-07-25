@@ -30,9 +30,9 @@ jobs:
         run: |
           devenv shell clang-format --dry-run -Werror **/*.cpp **/*.hpp
 
-      - name: Build (C++)
+      - name: Setup (C++)
         run: |
-          devenv shell build
+          devenv shell setup
 
       - name: Test (C++)
         run: |

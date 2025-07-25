@@ -13,7 +13,7 @@
   ];
 
   scripts = {
-    build.exec = ''
+    setup.exec = ''
       cmake -B build -S .
     '';
 
