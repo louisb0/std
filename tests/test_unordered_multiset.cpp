@@ -36,6 +36,14 @@ TEST(UnorderedMultiSet, Insert) {
     EXPECT_EQ(set.size(), 4);
 }
 
+TEST(UnorderedMultiSet, Erase) {
+    unordered_multiset set;
+    set.insert({1, 2, 2, 3});
+
+    EXPECT_EQ(set.erase(2), 2);
+    EXPECT_EQ(set.size(), 2);
+}
+
 TEST(UnorderedMultiSet, Find) {
     unordered_multiset set;
     set.emplace(1);

@@ -95,6 +95,43 @@ TEST(Hashtable, CommonInsert) {
     EXPECT_EQ(sum, 4);
 }
 
+TEST(Hashtable, CommonEraseRangeAndPos) {
+    unique_table ut(3);
+    ut.max_load_factor(1000);
+    ut.insert({{"a", 1}, {"b", 1}, {"c", 1}, {"d", 1}, {"e", 1}});
+
+    auto start_it = mystd::next(ut.begin(), 1);
+    auto end_it = mystd::next(ut.begin(), 4);
+    std::array<const char *, 3> to_remove{start_it->first, mystd::next(start_it)->first};
+
+    auto it = ut.erase(start_it, end_it);
+    EXPECT_EQ(it, end_it);
+    EXPECT_EQ(ut.size(), 2);
+    for (const auto &v : to_remove) {
+        EXPECT_FALSE(ut.contains(v));
+    }
+}
+
+TEST(Hashtable, UniqueEraseKey) {
+    unique_table ut(2);
+    ut.max_load_factor(1000);
+    ut.insert({{"a", 1}, {"b", 1}, {"c", 1}});
+
+    EXPECT_EQ(ut.erase("a"), 1);
+    EXPECT_FALSE(ut.contains("a"));
+    EXPECT_EQ(ut.size(), 2);
+}
+
+TEST(Hashtable, MultiEraseKey) {
+    multi_table mt(2);
+    mt.max_load_factor(1000);
+    mt.insert({{"a", 1}, {"b", 1}, {"c", 1}, {"b", 2}});
+
+    EXPECT_EQ(mt.erase("b"), 2);
+    EXPECT_FALSE(mt.contains("b"));
+    EXPECT_EQ(mt.size(), 2);
+}
+
 TEST(Hashtable, CommonFind) {
     unique_table ut;
     ut.emplace("a", 1);

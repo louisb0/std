@@ -36,6 +36,18 @@ TEST(UnorderedMap, Insert) {
     EXPECT_EQ(map.size(), 2);
 }
 
+TEST(UnorderedMap, Erase) {
+    unordered_map map;
+    map.insert({{"a", 1}, {"b", 1}, {"c", 1}, {"d", 1}});
+
+    auto start_it = mystd::next(map.begin(), 1);
+    auto end_it = mystd::next(map.begin(), 3);
+
+    auto it = map.erase(start_it, end_it);
+    EXPECT_EQ(it, end_it);
+    EXPECT_EQ(map.size(), 2);
+}
+
 TEST(UnorderedMap, Find) {
     unordered_map map;
     map.emplace("a", 1);

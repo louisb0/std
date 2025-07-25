@@ -50,6 +50,11 @@ public:
     template <mystd::input_iterator I> void insert(I first, I last) { _table.insert(first, last); }
     void insert(std::initializer_list<value_type> il) { _table.insert(il); }
 
+    iterator erase(const_iterator pos) { return _table.erase(pos); }
+    iterator erase(iterator pos) { return _table.erase(pos); }
+    iterator erase(const_iterator first, const_iterator last) { return _table.erase(first, last); }
+    size_type erase(const key_type &key) { return _table.erase(key); }
+
     void clear() noexcept { return _table.clear(); }
 
     // Lookup.

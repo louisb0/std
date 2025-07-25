@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <type_traits>
 #include <utility>
@@ -25,14 +26,16 @@ struct key_extractor_identity {
 };
 
 template <typename V, typename KeyExtractor, typename Hash, bool Unique> class hashtable {
+    static constexpr bool is_set = std::is_same_v<KeyExtractor, key_extractor_identity>;
+
 public:
     using value_type = V;
     using key_type =
         std::remove_cvref_t<decltype(std::declval<KeyExtractor>()(std::declval<value_type>()))>;
     using size_type = std::size_t;
-    using iterator = detail::node_iterator<value_type, false>;
+    using iterator = detail::node_iterator<value_type, is_set>;
     using const_iterator = detail::node_iterator<value_type, true>;
-    using local_iterator = detail::local_node_iterator<value_type, false>;
+    using local_iterator = detail::local_node_iterator<value_type, is_set>;
     using const_local_iterator = detail::local_node_iterator<value_type, true>;
 
 private:
@@ -108,6 +111,61 @@ public:
     }
     void insert(std::initializer_list<value_type> il) { insert(il.begin(), il.end()); }
 
+    iterator erase(const_iterator pos) {
+        _node_type *to_delete = pos.node();
+        _node_type *prev = _get_previous(to_delete);
+
+        size_type bucket = _bucket(to_delete);
+        size_type next_bucket = to_delete->next ? _bucket(to_delete->next) : bucket;
+
+        if (next_bucket != bucket) {
+            _buckets[next_bucket] = prev;
+
+            if (prev == _buckets[bucket]) {
+                _buckets[bucket] = nullptr;
+            }
+        }
+
+        prev->next = to_delete->next;
+        delete to_delete;
+        --_element_count;
+
+        return iterator(prev->next);
+    }
+
+    iterator erase(iterator pos)
+        requires(!is_set || !std::same_as<iterator, const_iterator>)
+    {
+        return erase(const_iterator(pos));
+    }
+
+    // NOTE: Inefficient hack.
+    iterator erase(const_iterator first, const_iterator last) {
+        while (first != last) {
+            first = erase(first);
+        }
+        return iterator(last.node());
+    }
+
+    size_type erase(const key_type &key) {
+        if constexpr (Unique) {
+            auto it = find(key);
+            if (it == end()) {
+                return 0;
+            }
+            erase(it);
+            return 1;
+        } else {
+            auto [first, last] = equal_range(key);
+            size_type count = 0;
+            while (first != last) {
+                first = erase(first);
+                ++count;
+            }
+            return count;
+        }
+    }
+
     void clear() noexcept {
         _node_type *cur = _before_begin.next;
         while (cur) {
@@ -134,7 +192,7 @@ public:
     }
 
     const_iterator find(const key_type &key) const noexcept {
-        return const_iterator(const_cast<hashtable *>(this)->find(key));
+        return const_cast<hashtable *>(this)->find(key);
     }
 
     bool contains(const key_type &key) const noexcept { return find(key) != end(); }
@@ -158,16 +216,18 @@ public:
             size_type bucket = this->bucket(key);
             auto pred = [&](const auto &elem) { return _extract_key(elem) == key; };
 
-            auto first = mystd::find_if(begin(bucket), end(bucket), pred);
-            auto last = mystd::find_if_not(first, end(bucket), pred);
+            local_iterator bucket_first = mystd::find_if(begin(bucket), end(bucket), pred);
 
-            return {iterator(first.node()), iterator(last.node())};
+            iterator first = iterator(bucket_first.node());
+            iterator last = mystd::find_if_not(first, end(), pred);
+
+            return {first, last};
         }
     }
 
     std::pair<const_iterator, const_iterator> equal_range(const key_type &key) const noexcept {
         auto [first, last] = const_cast<hashtable *>(this)->equal_range(key);
-        return {const_iterator(first), const_iterator(last)};
+        return {first, last};
     }
 
     // Buckets.
@@ -244,7 +304,7 @@ public:
 
 private:
     iterator _insert_unconditional(_node_type *node) noexcept {
-        size_type bucket = node->hash % bucket_count();
+        size_type bucket = _bucket(node);
 
         if (_buckets[bucket]) {
             _node_type *insert_after;
@@ -252,7 +312,7 @@ private:
                 insert_after = _buckets[bucket];
             } else {
                 auto [first, last] = equal_range(_extract_key(node->data));
-                insert_after = (first != end()) ? first.node() : _buckets[bucket];
+                insert_after = (first != last) ? first.node() : _buckets[bucket];
             }
 
             node->next = insert_after->next;
@@ -262,7 +322,7 @@ private:
             _before_begin.next = node;
 
             if (node->next) {
-                _buckets[node->next->hash % bucket_count()] = node;
+                _buckets[_bucket(node->next)] = node;
             }
             _buckets[bucket] = &_before_begin;
         }
@@ -270,6 +330,17 @@ private:
         ++_element_count;
         return iterator(node);
     }
+
+    _node_type *_get_previous(_node_type *node) {
+        _node_type *prev = _buckets[_bucket(node)];
+        while (prev && prev->next != node) {
+            prev = prev->next;
+        }
+
+        return prev;
+    }
+
+    size_type _bucket(_node_type *node) { return node->hash % bucket_count(); }
 };
 
 } // namespace mystd::detail

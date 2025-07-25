@@ -29,7 +29,7 @@ public:
     node_iterator() = default;
     explicit node_iterator(struct node<T> *node) : _node(node) {}
     template <bool OtherConst>
-    explicit node_iterator(const node_iterator<T, OtherConst> &other)
+    node_iterator(const node_iterator<T, OtherConst> &other)
         requires(IsConst || !OtherConst)
         : _node(other._node) {}
 

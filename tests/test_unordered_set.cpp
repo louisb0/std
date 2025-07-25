@@ -40,6 +40,18 @@ TEST(UnorderedSet, Insert) {
     EXPECT_EQ(set.size(), 2);
 }
 
+TEST(UnorderedSet, Erase) {
+    unordered_set set;
+    set.insert({1, 2, 3, 4});
+
+    auto start_it = mystd::next(set.begin(), 1);
+    auto end_it = mystd::next(set.begin(), 3);
+
+    auto it = set.erase(start_it, end_it);
+    EXPECT_EQ(it, end_it);
+    EXPECT_EQ(set.size(), 2);
+}
+
 TEST(UnorderedSet, Find) {
     unordered_set set;
     set.emplace(1);

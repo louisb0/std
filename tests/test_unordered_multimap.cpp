@@ -37,6 +37,14 @@ TEST(UnorderedMultiMap, Insert) {
     EXPECT_EQ(map.size(), 4);
 }
 
+TEST(UnorderedMultiMap, Erase) {
+    unordered_multimap map;
+    map.insert({{"a", 1}, {"c", 1}, {"c", 1}, {"d", 1}});
+
+    EXPECT_EQ(map.erase("c"), 2);
+    EXPECT_EQ(map.size(), 2);
+}
+
 TEST(UnorderedMultiMap, Find) {
     unordered_multimap map;
     map.emplace("a", 1);
