@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 #include <limits>
 #include <type_traits>
 #include <utility>
@@ -176,6 +175,19 @@ public:
 
         mystd::fill(_buckets, _buckets + bucket_count(), nullptr);
         _before_begin.next = nullptr;
+    }
+
+    void swap(hashtable &other) noexcept {
+        mystd::swap(_element_count, other._element_count);
+        mystd::swap(_bucket_count, other._bucket_count);
+        mystd::swap(_before_begin.next, other._before_begin.next);
+        mystd::swap(_buckets, other._buckets);
+        mystd::swap(_max_load_factor, other._max_load_factor);
+        mystd::swap(_hash, other._hash);
+        mystd::swap(_extract_key, other._extract_key);
+
+        _buckets[_bucket(_before_begin.next)] = &_before_begin;
+        other._buckets[other._bucket(other._before_begin.next)] = &other._before_begin;
     }
 
     // Lookup.

@@ -57,6 +57,8 @@ public:
     iterator erase(const_iterator first, const_iterator last) { return _table.erase(first, last); }
     size_type erase(const key_type &key) { return _table.erase(key); }
 
+    void swap(unordered_set &other) noexcept { return _table.swap(other._table); }
+
     void clear() noexcept { return _table.clear(); }
 
     // Lookup.

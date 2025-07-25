@@ -1,6 +1,7 @@
 #include "bits/hashtable.hpp"
 
 #include <gtest/gtest.h>
+#include <iostream>
 #include <unordered_set>
 #include <utility>
 
@@ -130,6 +131,30 @@ TEST(Hashtable, MultiEraseKey) {
     EXPECT_EQ(mt.erase("b"), 2);
     EXPECT_FALSE(mt.contains("b"));
     EXPECT_EQ(mt.size(), 2);
+}
+
+TEST(Hashtable, CommonSwap) {
+    unique_table ut1(2), ut2(2);
+    ut1.max_load_factor(1000);
+    ut2.max_load_factor(1000);
+
+    ut1.insert({{"a", 1}, {"b", 2}, {"c", 3}});
+    ut2.insert({{"d", 4}, {"e", 5}, {"f", 6}, {"g", 7}});
+
+    ut1.swap(ut2);
+    EXPECT_EQ(ut1.size(), 4);
+    EXPECT_EQ(ut2.size(), 3);
+
+    // NOTE: find(key) is used as a for-each loop alternative as it uses bucket based iteration,
+    // ensuring reset of &_before_begin.
+    EXPECT_NE(ut1.find("d"), ut1.end());
+    EXPECT_NE(ut1.find("e"), ut1.end());
+    EXPECT_NE(ut1.find("f"), ut1.end());
+    EXPECT_NE(ut1.find("g"), ut1.end());
+
+    EXPECT_NE(ut2.find("a"), ut2.end());
+    EXPECT_NE(ut2.find("b"), ut2.end());
+    EXPECT_NE(ut2.find("c"), ut2.end());
 }
 
 TEST(Hashtable, CommonFind) {
