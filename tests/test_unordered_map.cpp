@@ -1,5 +1,6 @@
 #include "type_traits.hpp"
 #include "unordered_map.hpp"
+#include "unordered_multimap.hpp"
 
 #include <gtest/gtest.h>
 
@@ -46,6 +47,24 @@ TEST(UnorderedMap, Erase) {
     auto it = map.erase(start_it, end_it);
     EXPECT_EQ(it, end_it);
     EXPECT_EQ(map.size(), 2);
+}
+
+TEST(UnorderedMap, Merge) {
+    unordered_map map;
+    mystd::unordered_multimap<const char *, int> other;
+
+    map.insert({"a", 1});
+    other.insert({{"b", 2}, {"b", 3}});
+
+    map.merge(other);
+    EXPECT_EQ(map.size(), 2);
+    EXPECT_EQ(other.size(), 0);
+
+    size_t sum{};
+    for (auto &[k, v] : map) {
+        sum += v;
+    }
+    EXPECT_EQ(sum, 1 + 2);
 }
 
 TEST(UnorderedMap, Find) {

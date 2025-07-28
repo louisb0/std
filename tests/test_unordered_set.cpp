@@ -1,4 +1,5 @@
 #include "type_traits.hpp"
+#include "unordered_multiset.hpp"
 #include "unordered_set.hpp"
 
 #include <gtest/gtest.h>
@@ -50,6 +51,24 @@ TEST(UnorderedSet, Erase) {
     auto it = set.erase(start_it, end_it);
     EXPECT_EQ(it, end_it);
     EXPECT_EQ(set.size(), 2);
+}
+
+TEST(UnorderedSet, Merge) {
+    unordered_set set;
+    mystd::unordered_multiset<int> other;
+
+    set.insert(1);
+    other.insert(1);
+
+    set.merge(other);
+    EXPECT_EQ(set.size(), 1);
+    EXPECT_EQ(other.size(), 0);
+
+    size_t sum{};
+    for (auto v : set) {
+        sum += v;
+    }
+    EXPECT_EQ(sum, 1);
 }
 
 TEST(UnorderedSet, Find) {

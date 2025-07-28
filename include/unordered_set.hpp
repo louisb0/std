@@ -8,9 +8,13 @@
 
 namespace mystd {
 
+template <typename K, typename Hash> class unordered_multiset;
+
 template <typename K, typename Hash = std::hash<K>> class unordered_set {
     using _hashtable = detail::hashtable<K, detail::key_extractor_identity, Hash, true>;
     _hashtable _table;
+
+    template <typename, typename> friend class unordered_multiset;
 
 public:
     using key_type = typename _hashtable::key_type;
@@ -58,6 +62,14 @@ public:
     size_type erase(const key_type &key) { return _table.erase(key); }
 
     void swap(unordered_set &other) noexcept { return _table.swap(other._table); }
+
+    template <typename H> void merge(unordered_set<K, H> &other) {
+        return _table.merge(other._table);
+    }
+
+    template <typename H> void merge(unordered_multiset<K, H> &other) {
+        return _table.merge(other._table);
+    }
 
     void clear() noexcept { return _table.clear(); }
 

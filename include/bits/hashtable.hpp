@@ -24,8 +24,15 @@ struct key_extractor_identity {
     template <typename T> const auto &operator()(const T &t) const noexcept { return t; }
 };
 
+// TODO:
+//  - Clean up method orders, imports, etc.
+//  - Allocator aware
+//  - Exception safety
+
 template <typename V, typename KeyExtractor, typename Hash, bool Unique> class hashtable {
     static constexpr bool is_set = std::is_same_v<KeyExtractor, key_extractor_identity>;
+
+    template <typename, typename, typename, bool> friend class hashtable;
 
 public:
     using value_type = V;
@@ -190,6 +197,28 @@ public:
         other._buckets[other._bucket(other._before_begin.next)] = &other._before_begin;
     }
 
+    template <typename H, bool U> void merge(hashtable<V, KeyExtractor, H, U> &other) {
+        _node_type *cur = other._before_begin.next;
+        while (cur) {
+            _node_type *next = cur->next;
+
+            if constexpr (Unique) {
+                if (contains(_extract_key(cur->data))) {
+                    delete cur;
+                } else {
+                    _insert_unconditional(cur);
+                }
+            } else {
+                _insert_unconditional(cur);
+            }
+
+            cur = next;
+        }
+
+        other._before_begin.next = nullptr;
+        other._element_count = 0;
+    }
+
     // Lookup.
     iterator find(const key_type &key) noexcept {
         size_type bucket = this->bucket(key);
@@ -281,9 +310,9 @@ public:
         _node_type *cur = _before_begin.next;
         _before_begin.next = nullptr;
 
-        // NOTE: It is invariant per _insert_unconditional() that elements which compare equal are
-        // stored 'contiguously' in the linked list. So, when rehashed, they too will be stored
-        // contiguous without any special casing.
+        // NOTE: It is invariant per _insert_unconditional() that elements which compare equal
+        // are stored 'contiguously' in the linked list. So, when rehashed, they too will be
+        // stored contiguous without any special casing.
         while (cur) {
             _node_type *next = cur->next;
 

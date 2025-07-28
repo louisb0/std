@@ -157,6 +157,40 @@ TEST(Hashtable, CommonSwap) {
     EXPECT_NE(ut2.find("c"), ut2.end());
 }
 
+TEST(Hashtable, UniqueMerge) {
+    unique_table ut1, ut2;
+    ut1.insert({{"a", 1}, {"b", 2}, {"c", 3}});
+    ut2.insert({{"c", 3}});
+
+    ut2.merge(ut1);
+    EXPECT_EQ(ut1.size(), 0);
+    EXPECT_EQ(ut1.begin(), ut1.end());
+
+    EXPECT_EQ(ut2.size(), 3);
+    size_t sum{};
+    for (auto &[k, v] : ut2) {
+        sum += v;
+    }
+    EXPECT_EQ(sum, 1 + 2 + 3);
+}
+
+TEST(Hashtable, MultiMerge) {
+    multi_table mt1, mt2;
+    mt1.insert({{"a", 1}, {"b", 2}, {"c", 3}});
+    mt2.insert({{"c", 3}});
+
+    mt2.merge(mt1);
+    EXPECT_EQ(mt1.size(), 0);
+    EXPECT_EQ(mt1.begin(), mt1.end());
+
+    EXPECT_EQ(mt2.size(), 4);
+    size_t sum{};
+    for (auto &[k, v] : mt2) {
+        sum += v;
+    }
+    EXPECT_EQ(sum, 1 + 2 + 3 + 3);
+}
+
 TEST(Hashtable, CommonFind) {
     unique_table ut;
     ut.emplace("a", 1);

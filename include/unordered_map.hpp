@@ -9,9 +9,13 @@
 
 namespace mystd {
 
+template <typename K, typename V, typename Hash> class unordered_multimap;
+
 template <typename K, typename V, typename Hash = std::hash<K>> class unordered_map {
     using _hashtable = detail::hashtable<std::pair<K, V>, detail::key_extractor_first, Hash, true>;
     _hashtable _table;
+
+    template <typename, typename, typename> friend class unordered_multimap;
 
 public:
     using key_type = typename _hashtable::key_type;
@@ -56,6 +60,14 @@ public:
     size_type erase(const key_type &key) { return _table.erase(key); }
 
     void swap(unordered_map &other) noexcept { return _table.swap(other._table); }
+
+    template <typename H> void merge(unordered_map<K, V, H> &other) {
+        return _table.merge(other._table);
+    }
+
+    template <typename H> void merge(unordered_multimap<K, V, H> &other) {
+        return _table.merge(other._table);
+    }
 
     void clear() noexcept { return _table.clear(); }
 
